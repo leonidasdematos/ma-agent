@@ -44,6 +44,8 @@ implementos ISOBUS, etc.).
 python3 -m venv .venv
 source .venv/bin/activate
 pip install pybluez  # opcional, necessário apenas para testes BT
+# opcional: informar o arquivo de configuração do implemento
+export MA_AGENT_IMPLEMENT_CONFIG=$(pwd)/config/implement.vence_tudo.json
 python agent.py
 ```
 
@@ -52,6 +54,20 @@ Para simular um cliente via TCP:
 ```bash
 echo '{"type":"HELLO","payload":{}}' | nc 127.0.0.1 7777
 ```
+### Configuração do implemento
+
+Cada gateway pode atuar com funções distintas (plantadeira, pulverizador,
+etc.). O arquivo `config/implement.vence_tudo.json` descreve o equipamento
+utilizado neste ambiente de desenvolvimento: uma plantadeira **Vence
+Tudo** com 26 linhas espaçadas a cada 0,5 m, distância de 4 m entre o
+rabicho e a primeira linha, 26 seções de sementes e 2 de adubo, todas com
+suporte a taxa variável.
+
+Durante a inicialização, o agente tenta carregar o arquivo apontado pela
+variável `MA_AGENT_IMPLEMENT_CONFIG`. Caso não exista, um perfil padrão
+com as mesmas características acima (empacotado no código fonte) é
+utilizado e enviado ao monitor via mensagem `INFO`.
+
 
 ### Próximos passos
 

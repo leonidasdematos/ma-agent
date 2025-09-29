@@ -8,6 +8,7 @@ import zipfile
 from pathlib import Path
 from typing import Iterable, List
 
+from .implement import ImplementProfile
 from .paths import AGENT_ROOT, UPDATES_DIR
 from .protocol.messages import (
     Message,
@@ -31,12 +32,19 @@ class GatewaySession:
     CAPABILITIES: Iterable[str] = (
         "telemetry/basic",
         "implement/management",
+        "implement/profile",
         "update/zip",
     )
 
-    def __init__(self, *, state: AgentState | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        state: AgentState | None = None,
+        implement_profile: ImplementProfile | None = None,
+    ) -> None:
         self.state = state or STATE
         self.handshake_complete = False
+        self.implement_profile = implement_profile
 
     # Public API ---------------------------------------------------------
     def handle_message(self, message: Message) -> List[Message]:
@@ -84,7 +92,16 @@ class GatewaySession:
 
     def _on_info_request(self, _: Message) -> List[Message]:
         snapshot = self.state.snapshot()
-        return [info_message(version=VERSION, uptime_s=snapshot["uptime_s"])]
+        implement_payload = (
+            self.implement_profile.to_payload() if self.implement_profile else None
+        )
+        return [
+            info_message(
+                version=VERSION,
+                uptime_s=snapshot["uptime_s"],
+                implement=implement_payload,
+            )
+        ]
 
     def _on_status_request(self, _: Message) -> List[Message]:
         snapshot = self.state.snapshot()

@@ -58,11 +58,16 @@ def hello_ack(*, version: str, capabilities: Iterable[str]) -> Message:
     )
 
 
-def info_message(version: str, uptime_s: int) -> Message:
-    return Message(
-        type=MessageType.INFO,
-        payload={"version": version, "uptime_s": uptime_s},
-    )
+def info_message(
+    version: str,
+    uptime_s: int,
+    *,
+    implement: Optional[Dict[str, Any]] = None,
+) -> Message:
+    payload: Dict[str, Any] = {"version": version, "uptime_s": uptime_s}
+    if implement:
+        payload["implement"] = implement
+    return Message(type=MessageType.INFO, payload=payload)
 
 
 __all__ = [

@@ -17,6 +17,7 @@ __all__ = [
     "LOG_FILE",
     "UPDATES_DIR",
     "VERSION_FILE",
+    "IMPLEMENT_CONFIG_FILE",
 ]
 
 ENV_PREFIX = "MA_AGENT"
@@ -32,5 +33,6 @@ LOG_DIR: Path = _env_path("LOG_DIR", "/var/log/ma-agent")
 LOG_FILE: Path = _env_path("LOG_FILE", str(LOG_DIR / "agent.log"))
 UPDATES_DIR: Path = _env_path("UPDATES_DIR", str(AGENT_ROOT / "updates"))
 VERSION_FILE: Path = _env_path("VERSION_FILE", str(AGENT_ROOT / "VERSION.txt"))
+IMPLEMENT_CONFIG_FILE: Path = _env_path("IMPLEMENT_CONFIG", str(AGENT_ROOT / "config" / "implement.json"))
 
 # Directories used by the agent are created lazily by the bootstrap code.

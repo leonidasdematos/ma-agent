@@ -13,6 +13,7 @@ class AgentConfig:
     enable_bluetooth: bool = True
     bluetooth_channel: int = 1
     service_name: str = "MAGateway"
+    implement_profile_path: Optional[str] = None
 
     @classmethod
     def from_env(cls) -> "AgentConfig":
@@ -22,6 +23,7 @@ class AgentConfig:
             enable_bluetooth=os.environ.get("MA_AGENT_ENABLE_BT", "1") not in {"0", "false", "False"},
             bluetooth_channel=int(os.environ.get("MA_AGENT_BT_CHANNEL", "1")),
             service_name=os.environ.get("MA_AGENT_SERVICE_NAME", "MAGateway"),
+            implement_profile_path=os.environ.get("MA_AGENT_IMPLEMENT_CONFIG"),
         )
 
 
