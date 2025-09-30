@@ -86,12 +86,15 @@ class BluetoothServer(TransportServer):
                         port = server.getsockname()[1]
                         LOGGER.info("RFCOMM listening on channel %s", port)
 
+                        service_uuid = getattr(self.config, "service_uuid", None) or SERIAL_PORT_CLASS
+
                         if advertise_service and SERIAL_PORT_CLASS and SERIAL_PORT_PROFILE:
                             try:
                                 advertise_service(
                                     server,
                                     getattr(self.config, "service_name", "MAGateway"),
-                                    service_classes=[SERIAL_PORT_CLASS],
+                                    service_id=service_uuid,
+                                    service_classes=[service_uuid, SERIAL_PORT_CLASS],
                                     profiles=[SERIAL_PORT_PROFILE],
                                 )
                                 LOGGER.info("SDP service advertised")
