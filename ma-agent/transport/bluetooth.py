@@ -16,7 +16,7 @@ except Exception:  # pragma: no cover - optional dependency
     BLUETOOTH_AVAILABLE = False
 
 from .base import StreamWorker, TransportServer
-from ..config import AgentConfig
+from config import AgentConfig
 from ..session import GatewaySession
 
 LOGGER = logging.getLogger(__name__)

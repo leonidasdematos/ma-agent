@@ -6,7 +6,7 @@ import threading
 import time
 from typing import Any, Dict, Optional
 
-from .versioning import read_version
+from versioning import read_version
 
 
 @dataclass

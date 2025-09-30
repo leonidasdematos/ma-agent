@@ -5,7 +5,6 @@ import base64
 import logging
 import subprocess
 import zipfile
-from pathlib import Path
 from typing import Iterable, List
 
 from .implement import ImplementProfile
@@ -17,7 +16,7 @@ from .protocol.messages import (
     hello_ack,
     info_message,
 )
-from .state import AgentState, STATE, VERSION
+from state import AgentState, STATE, VERSION
 
 LOGGER = logging.getLogger(__name__)
 

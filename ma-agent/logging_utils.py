@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Iterable
 
-from .paths import LOG_DIR, LOG_FILE
+from paths import LOG_DIR, LOG_FILE
 
 DEFAULT_LOG_LEVEL = logging.INFO
 

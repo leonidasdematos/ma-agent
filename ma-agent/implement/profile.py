@@ -9,7 +9,7 @@ from pathlib import Path
 import sys
 from typing import Any, Dict, Iterable, List, Optional
 
-from ..paths import IMPLEMENT_CONFIG_FILE
+from paths import IMPLEMENT_CONFIG_FILE
 
 LOGGER = logging.getLogger(__name__)
 
