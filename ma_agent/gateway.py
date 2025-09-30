@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import List
 
-from config import AgentConfig
+from .config import AgentConfig
 from implement import ImplementProfile, load_implement_profile
 from logging_utils import setup_logging
 from session import GatewaySession

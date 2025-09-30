@@ -6,7 +6,7 @@ import socket
 import threading
 
 from .base import StreamWorker, TransportServer
-from config import AgentConfig
+from ..config import AgentConfig
 
 LOGGER = logging.getLogger(__name__)
 
