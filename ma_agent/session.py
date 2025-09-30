@@ -16,7 +16,7 @@ from .protocol.messages import (
     hello_ack,
     info_message,
 )
-from state import AgentState, STATE, VERSION
+from .state import AgentState, STATE, VERSION
 
 LOGGER = logging.getLogger(__name__)
 
