@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
+import sys
 from typing import Any, Dict, Iterable, List, Optional
 
 from ..paths import IMPLEMENT_CONFIG_FILE
@@ -15,7 +16,12 @@ LOGGER = logging.getLogger(__name__)
 _DEFAULT_RESOURCE = "implement.vence_tudo.json"
 
 
-@dataclass(slots=True)
+# ``slots`` support for ``dataclasses`` was added in Python 3.10. Use it when
+# available while staying compatible with Python 3.9.
+_DATACLASS_KWARGS = {"slots": True} if sys.version_info >= (3, 10) else {}
+
+
+@dataclass(**_DATACLASS_KWARGS)
 class SectionProfile:
     """Metadata for a group of implement sections (e.g., seed, fertilizer)."""
 
@@ -44,7 +50,7 @@ class SectionProfile:
         return payload
 
 
-@dataclass(slots=True)
+@dataclass(**_DATACLASS_KWARGS)
 class ImplementProfile:
     """Structured description of the implement attached to the gateway."""
 

@@ -3,10 +3,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+import sys
 from typing import Optional
 
 
-@dataclass(slots=True)
+# ``slots`` support for ``dataclasses`` was added in Python 3.10. Keep using
+# slots where available, but remain compatible with Python 3.9.
+_DATACLASS_KWARGS = {"slots": True} if sys.version_info >= (3, 10) else {}
+
+
+@dataclass(**_DATACLASS_KWARGS)
 class AgentConfig:
     tcp_host: str = "0.0.0.0"
     tcp_port: int = 7777

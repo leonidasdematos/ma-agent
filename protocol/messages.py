@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Iterable, Iterator, Optional
-
+import sys
+from typing import Any, Dict, Iterable, Optional
 
 class MessageType(str, Enum):
     HELLO = "HELLO"
@@ -22,7 +22,12 @@ class MessageType(str, Enum):
     REBOOT = "REBOOT"
 
 
-@dataclass(slots=True)
+# ``slots`` support for ``dataclasses`` arrived in Python 3.10. Prefer slots
+# when available but remain compatible with Python 3.9.
+_DATACLASS_KWARGS = {"slots": True} if sys.version_info >= (3, 10) else {}
+
+
+@dataclass(**_DATACLASS_KWARGS)
 class Message:
     type: MessageType
     payload: Dict[str, Any] = field(default_factory=dict)
