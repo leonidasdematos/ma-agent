@@ -6,7 +6,6 @@ import signal
 import threading
 import time
 
-# imports corrigidos (sem pacote ma_agent)
 from config import AgentConfig
 from gateway import GatewayService
 

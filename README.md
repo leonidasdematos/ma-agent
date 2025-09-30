@@ -12,7 +12,7 @@ sistema por etapas.
 
 ### Arquitetura
 
-* `agent.py` — ponto de entrada usado pelo `systemd`.
+* `ma_agent/agent.py` — ponto de entrada usado pelo `systemd`.
 * `ma_agent/` — pacote Python com as camadas de configuração,
   transporte (TCP/Bluetooth), protocolo de mensagens e regras de
   negócio da sessão.
@@ -46,7 +46,7 @@ source .venv/bin/activate
 pip install pybluez  # opcional, necessário apenas para testes BT
 # opcional: informar o arquivo de configuração do implemento
 export MA_AGENT_IMPLEMENT_CONFIG=$(pwd)/config/implement.vence_tudo.json
-python agent.py
+python -m ma_agent.agent
 ```
 
 Para simular um cliente via TCP:
