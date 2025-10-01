@@ -54,9 +54,10 @@ class BluetoothServer(TransportServer):
         if self._thread and self._thread.is_alive():
             return
 
-            self._stop_event.clear()
-            self._thread = threading.Thread(target=self._run, name="bt-server", daemon=True)
-            self._thread.start()
+        self._stop_event.clear()
+        thread = threading.Thread(target=self._run, name="bt-server", daemon=True)
+        self._thread = thread
+        thread.start()
 
         def stop(self) -> None:  # pragma: no cover - hardware interaction
             self._stop_event.set()
