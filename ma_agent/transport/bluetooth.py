@@ -45,7 +45,7 @@ class BluetoothServer(TransportServer):
         self._session_factory = session_factory
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
-        self._server_socket: BluetoothSocket | None = None
+        self._server_socket: BluetoothSocket | None = None  # type: ignore[assignment]
 
     def start(self) -> None:  # pragma: no cover - hardware interaction
         if not BLUETOOTH_AVAILABLE:
@@ -59,95 +59,94 @@ class BluetoothServer(TransportServer):
         self._thread = threading.Thread(target=self._run, name="bt-server", daemon=True)
         self._thread.start()
 
-        def stop(self) -> None:  # pragma: no cover - hardware interaction
-            self._stop_event.set()
-            if self._server_socket is not None:
+    def stop(self) -> None:  # pragma: no cover - hardware interaction
+        self._stop_event.set()
+        if self._server_socket is not None:
+            try:
+                self._server_socket.close()
+            except Exception:
+                pass
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=5.0)
+        self._thread = None
+
+    def run(self) -> None:  # pragma: no cover - hardware interaction
+        """Backward compatible entry point used by older deployments."""
+        self._run()
+
+    def _run(self) -> None:  # pragma: no cover - hardware interaction
+        try:
+            server = BluetoothSocket(RFCOMM)  # type: ignore[misc]
+        except Exception as exc:
+            LOGGER.error("failed to create BluetoothSocket: %s", exc)
+            return
+
+        self._server_socket = server
+        try:
+            channel = getattr(self.config, "bluetooth_channel", None)
+            bind_channel = channel if channel is not None else PORT_ANY
+            server.bind(("", bind_channel))  # type: ignore[arg-type]
+            server.listen(1)
+            server.settimeout(1.0)
+            port = server.getsockname()[1]
+            LOGGER.info("RFCOMM listening on channel %s", port)
+
+            service_uuid = getattr(self.config, "service_uuid", None) or SERIAL_PORT_CLASS
+
+            if advertise_service and SERIAL_PORT_CLASS and SERIAL_PORT_PROFILE:
                 try:
-                    self._server_socket.close()
-                except Exception:
-                    pass
-            if self._thread and self._thread.is_alive():
-                self._thread.join(timeout=5.0)
-            self._thread = None
-
-        def run(self) -> None:  # pragma: no cover - hardware interaction
-            """Backward compatible entry point used by older deployments."""
-            self._run()
-
-        def _run(self) -> None:  # pragma: no cover - hardware interaction
-            try:
-                server = BluetoothSocket(RFCOMM)
-            except Exception as exc:
-                LOGGER.error("failed to create BluetoothSocket: %s", exc)
-                return
-
-            self._server_socket = server
-            try:
-                channel = getattr(self.config, "bluetooth_channel", None)
-                bind_channel = channel if channel is not None else PORT_ANY
-                server.bind(("", bind_channel))
-                server.listen(1)
-                server.settimeout(1.0)
-                port = server.getsockname()[1]
-                LOGGER.info("RFCOMM listening on channel %s", port)
-
-                service_uuid = getattr(self.config, "service_uuid", None) or SERIAL_PORT_CLASS
-
-                if advertise_service and SERIAL_PORT_CLASS and SERIAL_PORT_PROFILE:
-                    try:
-                        advertise_service(
-                            server,
-                            getattr(self.config, "service_name", "MAGateway"),
-                            service_id=service_uuid,
-                            service_classes=[service_uuid, SERIAL_PORT_CLASS],
-                            profiles=[SERIAL_PORT_PROFILE],
-                        )
-                        LOGGER.info("SDP service advertised")
-                    except Exception as exc:  # pragma: no cover - optional dependency
-                        LOGGER.warning("SDP advertise failed: %s", exc)
-
-                while not self._stop_event.is_set():
-                    try:
-                        client_sock, client_info = server.accept()
-                    except socket.timeout:
-                        continue
-                    except BluetoothError as exc:
-                        if self._stop_event.is_set():
-                            break
-                        if "timed out" in str(exc).lower():
-                            continue
-                        LOGGER.warning("Bluetooth accept failed: %s", exc)
-                        continue
-                    except OSError as exc:
-                        if self._stop_event.is_set():
-                            break
-                        LOGGER.warning("Bluetooth accept failed: %s", exc)
-                        continue
-
-                    LOGGER.info("accepted bluetooth connection from %s", client_info)
-                    client_thread = threading.Thread(
-                        target=self._handle_client,
-                        args=(client_sock, client_info),
-                        name=self._client_thread_name(client_info),
-                        daemon=True,
+                    advertise_service(
+                        server,
+                        getattr(self.config, "service_name", "MAGateway"),
+                        service_id=service_uuid,
+                        service_classes=[service_uuid, SERIAL_PORT_CLASS],
+                        profiles=[SERIAL_PORT_PROFILE],
                     )
-                    client_thread.start()
+                    LOGGER.info("SDP service advertised")
+                except Exception as exc:  # pragma: no cover - optional dependency
+                    LOGGER.warning("SDP advertise failed: %s", exc)
 
-            except BluetoothError as exc:
-                if not self._stop_event.is_set():
-                    LOGGER.error("bluetooth server error: %s", exc)
-
-            except Exception as exc:  # pragma: no cover - defensive
-                LOGGER.exception("unexpected bluetooth server error: %s", exc)
-
-            finally:
+            while not self._stop_event.is_set():
                 try:
-                    server.close()
-                except Exception:
-                    pass
-                self._server_socket = None
-                LOGGER.info("Bluetooth RFCOMM server stopped")
+                    client_sock, client_info = server.accept()
+                except socket.timeout:
+                    continue
+                except BluetoothError as exc:  # type: ignore[misc]
+                    if self._stop_event.is_set():
+                        break
+                    if "timed out" in str(exc).lower():
+                        continue
+                    LOGGER.warning("Bluetooth accept failed: %s", exc)
+                    continue
+                except OSError as exc:
+                    if self._stop_event.is_set():
+                        break
+                    LOGGER.warning("Bluetooth accept failed: %s", exc)
+                    continue
 
+                LOGGER.info("accepted bluetooth connection from %s", client_info)
+                client_thread = threading.Thread(
+                    target=self._handle_client,
+                    args=(client_sock, client_info),
+                    name=self._client_thread_name(client_info),
+                    daemon=True,
+                )
+                client_thread.start()
+
+        except BluetoothError as exc:  # type: ignore[misc]
+            if not self._stop_event.is_set():
+                LOGGER.error("bluetooth server error: %s", exc)
+
+        except Exception as exc:  # pragma: no cover - defensive
+            LOGGER.exception("unexpected bluetooth server error: %s", exc)
+
+        finally:
+            try:
+                server.close()
+            except Exception:
+                pass
+            self._server_socket = None
+            LOGGER.info("Bluetooth RFCOMM server stopped")
 
     def _handle_client(self, client_sock, client_info) -> None:  # pragma: no cover - hardware interaction
         peer = self._format_peer(client_info)
