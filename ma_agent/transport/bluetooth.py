@@ -55,7 +55,7 @@ class BluetoothServer(TransportServer):
             return
 
         self._stop_event.clear()
-        thread = threading.Thread(target=self._run, name="bt-server", daemon=True)
+        thread = threading.Thread(target=self.run, name="bt-server", daemon=True)
         self._thread = thread
         thread.start()
 
