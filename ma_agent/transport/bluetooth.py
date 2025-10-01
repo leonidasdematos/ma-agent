@@ -56,7 +56,7 @@ class BluetoothServer(TransportServer):
             return
 
         self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run, name="bt-server", daemon=True)
+        self._thread = threading.Thread(target=self.run, name="bt-server", daemon=True)
         self._thread.start()
 
         def stop(self) -> None:  # pragma: no cover - hardware interaction
@@ -70,7 +70,7 @@ class BluetoothServer(TransportServer):
                 self._thread.join(timeout=5.0)
             self._thread = None
 
-        def _run(self) -> None:  # pragma: no cover - hardware interaction
+        def run(self) -> None:  # pragma: no cover - hardware interaction
             try:
                 server = BluetoothSocket(RFCOMM)
             except Exception as exc:
