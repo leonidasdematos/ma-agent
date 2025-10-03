@@ -63,6 +63,7 @@ class GatewaySession:
         self._last_ack_timestamp: Optional[float] = None
         self._last_heartbeat_at: Optional[float] = None
         self._pending_fix_sequence: Optional[int] = None
+        self._message_sender: Optional[Callable[[Message], None]] = None
 
 
     # Public API ---------------------------------------------------------
@@ -111,6 +112,7 @@ class GatewaySession:
                 self.telemetry_publisher.unregister_session(self)
             finally:
                 self._registered_with_publisher = False
+        self._message_sender = None
         if self.gnss_coordinator:
             unregister = getattr(self.gnss_coordinator, "unregister_session", None)
             if unregister:
@@ -331,5 +333,49 @@ class GatewaySession:
         self._pending_fix_sequence = int(sequence)
         self._last_heartbeat_at = self._clock()
 
+    # Transport interaction -------------------------------------------------
+    def attach_sender(self, sender: Callable[[Message], None]) -> None:
+        """Allow the session to push messages asynchronously to the monitor."""
+
+        self._message_sender = sender
+
+    def detach_sender(self) -> None:
+        self._message_sender = None
+
+    def can_stream(self) -> bool:
+        return (
+            self.handshake_complete
+            and self.telemetry_subscribed
+            and self._message_sender is not None
+        )
+
+    def send_message(self, message: Message) -> bool:
+        """Push ``message`` to the monitor if the transport is ready."""
+
+        if not self.handshake_complete:
+            LOGGER.debug("ignoring outbound %s before handshake", message.type)
+            return False
+        if not self.telemetry_subscribed:
+            LOGGER.debug(
+                "ignoring outbound %s because telemetry is not subscribed",
+                message.type,
+            )
+            return False
+        if not self._message_sender:
+            LOGGER.debug("no sender available; dropping %s", message.type)
+            return False
+        try:
+            self._message_sender(message)
+        except Exception:  # pragma: no cover - defensive logging
+            LOGGER.exception("failed to send %s to monitor", message.type)
+            return False
+        if message.type is MessageType.GNSS_FIX:
+            sequence = message.payload.get("sequence") if message.payload else None
+            if sequence is not None:
+                try:
+                    self.mark_fix_sent(int(sequence))
+                except (TypeError, ValueError):
+                    LOGGER.debug("unable to mark fix sent for sequence %r", sequence)
+        return True
 
 __all__ = ["GatewaySession", "HandshakeError"]

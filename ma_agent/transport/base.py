@@ -28,15 +28,23 @@ class StreamWorker(threading.Thread):
 
     daemon = True
 
-    def __init__(self, *, conn: socket.socket, peer: str, session_factory: Callable[[], GatewaySession]) -> None:
+    def __init__(
+        self,
+        *,
+        conn: socket.socket,
+        peer: str,
+        session_factory: Callable[[], GatewaySession],
+    ) -> None:
         super().__init__(name=f"{peer}-worker")
         self.conn = conn
         self.peer = peer
         self.session_factory = session_factory
+        self._send_lock = threading.Lock()
 
     def run(self) -> None:  # pragma: no cover - network IO
         LOGGER.info("connection opened from %s", self.peer)
         session = self.session_factory()
+        session.attach_sender(self._send_message)
         try:
             buffer = b""
             while True:
@@ -66,6 +74,10 @@ class StreamWorker(threading.Thread):
                         self.conn.sendall(LineCodec.encode(response))
         finally:
             try:
+                session.detach_sender()
+            except Exception:  # pragma: no cover - defensive cleanup
+                LOGGER.exception("error detaching sender for %s", self.peer)
+            try:
                 session.close()
             except Exception:  # pragma: no cover - defensive cleanup
                 LOGGER.exception("error closing session for %s", self.peer)
@@ -74,6 +86,12 @@ class StreamWorker(threading.Thread):
                     self.conn.close()
                 finally:
                     LOGGER.info("connection closed from %s", self.peer)
+
+    def _send_message(self, message: Message) -> None:
+        payload = LineCodec.encode(message)
+        with self._send_lock:
+            self.conn.sendall(payload)
+
 
 
 __all__ = ["TransportServer", "StreamWorker"]

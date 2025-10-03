@@ -69,8 +69,28 @@ com as mesmas características acima (empacotado no código fonte) é
 utilizado e enviado ao monitor via mensagem `INFO`.
 
 
+### Simulador de plantio
+
+O agente inclui um simulador opcional que publica coordenadas GNSS e o
+estado da plantadeira durante testes locais. Por padrão ele está
+habilitado e pode ser ajustado via variáveis de ambiente:
+
+```bash
+export MA_AGENT_ENABLE_SIMULATOR=1            # ativa/desativa o simulador
+export MA_AGENT_SIM_FIELD_LENGTH_M=250        # comprimento do talhão (m)
+export MA_AGENT_SIM_HEADLAND_M=18             # comprimento da cabeceira (m)
+export MA_AGENT_SIM_SPEED_MPS=2.8             # velocidade média (m/s)
+export MA_AGENT_SIM_SAMPLE_HZ=2.0             # taxa de envio (Hz)
+export MA_AGENT_SIM_PASSES_PER_CYCLE=10       # número de idas/voltas no ciclo
+```
+
+O simulador percorre um trajeto em “zigue-zague”: realiza um tiro com a
+plantadeira ligada, executa a manobra de cabeceira com as linhas
+desligadas e retorna pela linha adjacente, garantindo que o monitor
+repinte o mapa corretamente.
+
+
 ### Próximos passos
 
-* Integrar simuladores (ex.: plantadeira) usando a camada de mensagens.
 * Adicionar autenticação e criptografia conforme necessário.
 * Instrumentar métricas e testes automatizados.

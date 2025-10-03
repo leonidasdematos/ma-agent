@@ -8,6 +8,7 @@ from .config import AgentConfig
 from .implement import ImplementProfile, load_implement_profile
 from .logging_utils import setup_logging
 from .session import GatewaySession
+from .simulators import PlanterSimulator
 from .state import STATE
 from .transport.bluetooth import BluetoothServer
 from .transport.tcp import TcpServer
@@ -30,6 +31,19 @@ class GatewayService:
         self.implement_profile = implement_profile or load_implement_profile(
             self.config.implement_profile_path
         )
+        if telemetry_publisher is None and self.config.enable_planter_simulator:
+            telemetry_publisher = PlanterSimulator(
+                implement_profile=self.implement_profile,
+                field_length_m=self.config.simulator_field_length_m,
+                headland_length_m=self.config.simulator_headland_length_m,
+                speed_mps=self.config.simulator_speed_mps,
+                sample_rate_hz=self.config.simulator_sample_rate_hz,
+                base_lat=self.config.simulator_base_lat,
+                base_lon=self.config.simulator_base_lon,
+                altitude_m=self.config.simulator_altitude_m,
+                passes_per_cycle=self.config.simulator_passes_per_cycle,
+                loop_forever=True,
+            )
         self.telemetry_publisher = telemetry_publisher
         self.gnss_coordinator = gnss_coordinator
         self._servers: List = []
