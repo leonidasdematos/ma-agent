@@ -66,9 +66,14 @@ class StreamWorker(threading.Thread):
                         self.conn.sendall(LineCodec.encode(response))
         finally:
             try:
-                self.conn.close()
+                session.close()
+            except Exception:  # pragma: no cover - defensive cleanup
+                LOGGER.exception("error closing session for %s", self.peer)
             finally:
-                LOGGER.info("connection closed from %s", self.peer)
+                try:
+                    self.conn.close()
+                finally:
+                    LOGGER.info("connection closed from %s", self.peer)
 
 
 __all__ = ["TransportServer", "StreamWorker"]

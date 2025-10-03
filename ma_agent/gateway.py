@@ -22,11 +22,16 @@ class GatewayService:
         self,
         config: AgentConfig | None = None,
         implement_profile: ImplementProfile | None = None,
+        *,
+        telemetry_publisher=None,
+        gnss_coordinator=None,
     ) -> None:
         self.config = config or AgentConfig.from_env()
         self.implement_profile = implement_profile or load_implement_profile(
             self.config.implement_profile_path
         )
+        self.telemetry_publisher = telemetry_publisher
+        self.gnss_coordinator = gnss_coordinator
         self._servers: List = []
 
     def start(self) -> None:
@@ -35,7 +40,12 @@ class GatewayService:
 
         tcp_server = TcpServer(
             self.config,
-            session_factory=lambda: GatewaySession(state=STATE, implement_profile=self.implement_profile),
+            session_factory=lambda: GatewaySession(
+                state=STATE,
+                implement_profile=self.implement_profile,
+                telemetry_publisher=self.telemetry_publisher,
+                gnss_coordinator=self.gnss_coordinator,
+            ),
         )
         tcp_server.start()
         self._servers.append(tcp_server)
@@ -44,7 +54,10 @@ class GatewayService:
             bt_server = BluetoothServer(
                 self.config,
                 session_factory=lambda: GatewaySession(
-                    state=STATE, implement_profile=self.implement_profile
+                    state=STATE,
+                    implement_profile=self.implement_profile,
+                    telemetry_publisher=self.telemetry_publisher,
+                    gnss_coordinator=self.gnss_coordinator,
                 ),
             )
             bt_server.start()
