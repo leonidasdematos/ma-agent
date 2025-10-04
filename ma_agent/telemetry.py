@@ -128,6 +128,16 @@ class SimulatedTelemetryPublisher:
                     sent = session.send_message(message)
                     if not sent:
                         continue
+                    payload = message.payload or {}
+                    LOGGER.info(
+                        "sent GNSS fix seq=%s lat=%.7f lon=%.7f heading=%.1f speed=%.2f accuracy=%.2f",
+                        payload.get("sequence"),
+                        payload.get("latitude", 0.0),
+                        payload.get("longitude", 0.0),
+                        payload.get("heading_deg", 0.0),
+                        payload.get("speed_mps", 0.0),
+                        payload.get("accuracy_m", 0.0),
+                    )
                 except Exception:
                     self.unregister_session(session)
             time.sleep(interval)
