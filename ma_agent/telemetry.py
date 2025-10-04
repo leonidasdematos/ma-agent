@@ -5,7 +5,18 @@ import math
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Iterable, Protocol, Set
+from typing import Any, Iterable, Set
+
+try:  # pragma: no cover - typing.Protocol may be unavailable on older Python
+    from typing import Protocol
+except ImportError:  # pragma: no cover
+    try:
+        from typing_extensions import Protocol  # type: ignore
+    except ImportError:  # pragma: no cover
+        class Protocol:  # type: ignore
+            """Fallback Protocol base when typing module lacks the feature."""
+
+            pass
 
 from .protocol.messages import Message, MessageType
 
