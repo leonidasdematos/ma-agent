@@ -122,8 +122,9 @@ class SimulatedTelemetryPublisher:
                 if getattr(session, "awaiting_ack", False):
                     continue
                 try:
-                    session.send_message(message)
-                    session.mark_fix_sent(sample.sequence)
+                    sent = session.send_message(message)
+                    if not sent:
+                        continue
                 except Exception:
                     self.unregister_session(session)
             time.sleep(interval)
