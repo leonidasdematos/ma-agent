@@ -1,6 +1,7 @@
 """Telemetry publisher interfaces used by the gateway session."""
 from __future__ import annotations
 
+import logging
 import math
 import threading
 import time
@@ -19,6 +20,8 @@ except ImportError:  # pragma: no cover
             pass
 
 from .protocol.messages import Message, MessageType
+
+LOGGER = logging.getLogger(__name__)
 
 class TelemetryPublisher(Protocol):
     """Protocol describing the expected telemetry publisher behaviour."""

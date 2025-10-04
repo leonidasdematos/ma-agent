@@ -269,6 +269,12 @@ class GatewaySession:
         except (TypeError, ValueError):
             LOGGER.warning("invalid GNSS_ACK sequence %r", sequence)
             return []
+        LOGGER.info(
+            "received GNSS ACK seq=%s status=%s timestamp=%s",
+            sequence_int,
+            status,
+            timestamp,
+        )
         self._last_ack_sequence = sequence_int
         self._last_ack_status = status
         self._last_ack_timestamp = timestamp if isinstance(timestamp, (int, float)) else None
