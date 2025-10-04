@@ -8,11 +8,14 @@ import time
 
 from .config import AgentConfig
 from .gateway import GatewayService
+from .telemetry import SimulatedTelemetryPublisher
+
 
 
 def main() -> None:
     config = AgentConfig.from_env()
-    service = GatewayService(config)
+    telemetry_publisher = SimulatedTelemetryPublisher()
+    service = GatewayService(config, telemetry_publisher=telemetry_publisher)
     service.start()
 
     # Mantém a thread principal viva enquanto os transports rodam em background.
@@ -30,6 +33,8 @@ def main() -> None:
             time.sleep(1)
     except KeyboardInterrupt:  # pragma: no cover
         pass
+    finally:
+        telemetry_publisher.stop()
 
 
 if __name__ == "__main__":  # pragma: no cover

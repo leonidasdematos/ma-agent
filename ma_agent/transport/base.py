@@ -44,7 +44,9 @@ class StreamWorker(threading.Thread):
     def run(self) -> None:  # pragma: no cover - network IO
         LOGGER.info("connection opened from %s", self.peer)
         session = self.session_factory()
-        session.attach_sender(self._send_message)
+        attach = getattr(session, "attach_sender", None)
+        if attach:
+            attach(self._send)
         try:
             buffer = b""
             while True:
@@ -71,12 +73,8 @@ class StreamWorker(threading.Thread):
                         )
                         continue
                     for response in session.handle_message(message):
-                        self.conn.sendall(LineCodec.encode(response))
+                        self._send(response)
         finally:
-            try:
-                session.detach_sender()
-            except Exception:  # pragma: no cover - defensive cleanup
-                LOGGER.exception("error detaching sender for %s", self.peer)
             try:
                 session.close()
             except Exception:  # pragma: no cover - defensive cleanup
@@ -87,10 +85,11 @@ class StreamWorker(threading.Thread):
                 finally:
                     LOGGER.info("connection closed from %s", self.peer)
 
-    def _send_message(self, message: Message) -> None:
-        payload = LineCodec.encode(message)
+    def _send(self, message: Message) -> None:
+        data = LineCodec.encode(message)
         with self._send_lock:
-            self.conn.sendall(payload)
+            self.conn.sendall(data)
+
 
 
 

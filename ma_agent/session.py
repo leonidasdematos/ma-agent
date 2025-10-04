@@ -64,6 +64,7 @@ class GatewaySession:
         self._last_heartbeat_at: Optional[float] = None
         self._pending_fix_sequence: Optional[int] = None
         self._message_sender: Optional[Callable[[Message], None]] = None
+        self._sender: Callable[[Message], None] | None = None
 
 
     # Public API ---------------------------------------------------------
@@ -117,6 +118,20 @@ class GatewaySession:
             unregister = getattr(self.gnss_coordinator, "unregister_session", None)
             if unregister:
                 unregister(self)
+        self._sender = None
+
+        # Outgoing telemetry ---------------------------------------------
+        def attach_sender(self, sender: Callable[[Message], None]) -> None:
+            """Attach a callable capable of sending messages to the monitor."""
+
+            self._sender = sender
+
+        def send_message(self, message: Message) -> None:
+            """Send a message to the monitor using the registered sender."""
+
+            if self._sender is None:
+                raise RuntimeError("session is not attached to a transport sender")
+            self._sender(message)
 
 
     # Message handlers ---------------------------------------------------
