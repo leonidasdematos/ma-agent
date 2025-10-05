@@ -130,13 +130,14 @@ class SimulatedTelemetryPublisher:
                         continue
                     payload = message.payload or {}
                     LOGGER.info(
-                        "sent GNSS fix seq=%s lat=%.7f lon=%.7f heading=%.1f speed=%.2f accuracy=%.2f",
+                        "sent GNSS fix seq=%s lat=%.7f lon=%.7f heading=%.1f speed=%.2f accuracy=%.2f timestamp_ms=%s",
                         payload.get("sequence"),
                         payload.get("latitude", 0.0),
                         payload.get("longitude", 0.0),
                         payload.get("heading_deg", 0.0),
                         payload.get("speed_mps", 0.0),
                         payload.get("accuracy_m", 0.0),
+                        payload.get("timestamp_ms"),
                     )
                 except Exception:
                     self.unregister_session(session)
