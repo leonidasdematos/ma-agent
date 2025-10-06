@@ -51,7 +51,7 @@ class AgentConfig:
             ),
             simulator_speed_mps=float(os.environ.get("MA_AGENT_SIM_SPEED_MPS", "2.5")),
             simulator_sample_rate_hz=float(
-                os.environ.get("MA_AGENT_SIM_SAMPLE_HZ", "2.0")
+                os.environ.get("MA_AGENT_SIM_SAMPLE_HZ", "20.0")
             ),
             simulator_passes_per_cycle=int(
                 os.environ.get("MA_AGENT_SIM_PASSES_PER_CYCLE", "8")
