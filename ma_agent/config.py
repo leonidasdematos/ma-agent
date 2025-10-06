@@ -25,7 +25,7 @@ class AgentConfig:
     simulator_field_length_m: float = 300.0
     simulator_headland_length_m: float = 20.0
     simulator_speed_mps: float = 2.5
-    simulator_sample_rate_hz: float = 10.0
+    simulator_sample_rate_hz: float = 5.0
     simulator_passes_per_cycle: int = 8
     simulator_base_lat: float = -22.000000
     simulator_base_lon: float = -47.000000
@@ -51,7 +51,7 @@ class AgentConfig:
             ),
             simulator_speed_mps=float(os.environ.get("MA_AGENT_SIM_SPEED_MPS", "2.5")),
             simulator_sample_rate_hz=float(
-                os.environ.get("MA_AGENT_SIM_SAMPLE_HZ", "10.0")
+                os.environ.get("MA_AGENT_SIM_SAMPLE_HZ", "5.0")
             ),
             simulator_passes_per_cycle=int(
                 os.environ.get("MA_AGENT_SIM_PASSES_PER_CYCLE", "8")
