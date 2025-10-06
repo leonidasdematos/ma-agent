@@ -14,7 +14,12 @@ from .telemetry import SimulatedTelemetryPublisher
 
 def main() -> None:
     config = AgentConfig.from_env()
-    telemetry_publisher = SimulatedTelemetryPublisher()
+    telemetry_publisher = SimulatedTelemetryPublisher(
+        sample_rate_hz=config.simulator_sample_rate_hz,
+        speed_mps=config.simulator_speed_mps,
+        base_latitude=config.simulator_base_lat,
+        base_longitude=config.simulator_base_lon,
+    )
     service = GatewayService(config, telemetry_publisher=telemetry_publisher)
     service.start()
 
