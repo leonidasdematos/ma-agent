@@ -155,8 +155,10 @@ class SimulatedTelemetryPublisher:
         delta_lon = delta_lat / max(math.cos(math.radians(self._base_latitude)), 1e-6)
         latitude = self._base_latitude + delta_lat * math.sin(angle)
         longitude = self._base_longitude + delta_lon * math.cos(angle)
-        heading_deg = (math.degrees(angle) + 360.0) % 360.0
-
+        delta_east = -math.sin(angle)
+        delta_north = math.cos(angle)
+        heading_rad = math.atan2(delta_east, delta_north)
+        heading_deg = (math.degrees(heading_rad) + 360.0) % 360.0
         return _TelemetrySample(
             sequence=self._sequence,
             latitude=latitude,

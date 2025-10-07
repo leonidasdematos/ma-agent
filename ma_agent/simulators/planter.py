@@ -174,8 +174,8 @@ class PlanterSimulator(TelemetryPublisher):
         timestamp = time.time()
         sections = [point.active] * self.row_count
         payload = {
-            "latitude": longitude,
-            "longitude": latitude,
+            "latitude": latitude,
+            "longitude": longitude,
             "altitude": self.altitude_m,
             "accuracy": self.accuracy_m,
             "sequence": sequence,
