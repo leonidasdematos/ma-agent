@@ -158,7 +158,7 @@ class SimulatedTelemetryPublisher:
         delta_east = -math.sin(angle)
         delta_north = math.cos(angle)
         heading_rad = math.atan2(delta_east, delta_north)
-        heading_deg = (math.degrees(heading_rad) + 360.0) % 360.0
+        heading_deg = 0
         return _TelemetrySample(
             sequence=self._sequence,
             latitude=latitude,
