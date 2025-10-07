@@ -32,12 +32,12 @@ class PlanterSimulator(TelemetryPublisher):
         field_length_m: float = 300.0,
         headland_length_m: float = 20.0,
         speed_mps: float = 2.5,
-        sample_rate_hz: float = 2.0,
+        sample_rate_hz: float = 10.0,
         base_lat: float = -22.000000,
         base_lon: float = -47.000000,
         altitude_m: float = 550.0,
         accuracy_m: float = 0.05,
-        passes_per_cycle: int = 8,
+        passes_per_cycle: int = 80,
         loop_forever: bool = True,
     ) -> None:
         if sample_rate_hz <= 0:
