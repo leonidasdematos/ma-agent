@@ -26,6 +26,7 @@ class _Sample:
     point: _Point
     heading_deg: float
     speed_mps: float
+    time_delta_s: float
 
 
 class PlanterSimulator(TelemetryPublisher):
@@ -174,15 +175,35 @@ class PlanterSimulator(TelemetryPublisher):
             distance = math.hypot(delta_east, delta_north)
             if distance > 0.0:
                 heading = (math.degrees(math.atan2(delta_east, delta_north)) + 360.0) % 360.0
-                speed = distance * self.sample_rate_hz
+                base_speed = distance * self.sample_rate_hz
+                speed_factor = 1.0 + self._speed_variation(index=index, is_active=point.active)
+                speed = max(0.05, base_speed * speed_factor)
                 last_heading = heading
+                time_delta = distance / speed if speed > 0.0 else 1.0 / self.sample_rate_hz
             else:
                 heading = last_heading
                 speed = 0.0
+                time_delta = 1.0 / self.sample_rate_hz
 
-            samples.append(_Sample(point=point, heading_deg=heading, speed_mps=speed))
+            samples.append(
+                _Sample(point=point, heading_deg=heading, speed_mps=speed, time_delta_s=time_delta)
+            )
 
         return samples
+
+    def _speed_variation(self, *, index: int, is_active: bool) -> float:
+        """Return a small multiplier offset applied to the base speed.
+
+        The variation is deterministic so the path is repeatable, while still
+        adding subtle changes that mimic the tractor slowing down on headlands
+        and gentle oscillations along the pass.
+        """
+
+        oscillation = math.sin(index * 0.11) * 0.04  # +/- 4 % variation
+        headland_adjustment = -0.06 if not is_active else 0.0
+        variation = oscillation + headland_adjustment
+        return max(-0.15, min(0.08, variation))
+
 
     @staticmethod
     def _interpolate(
@@ -268,7 +289,7 @@ class _PlanterWorker(threading.Thread):
                 sent = self.session.send_message(message)
                 if sent:
                     sequence += 1
-                time.sleep(1.0 / self.simulator.sample_rate_hz)
+                time.sleep(sample.time_delta_s)
             if not self.simulator.loop_forever:
                 break
         self.simulator._on_worker_finished(self.session)
