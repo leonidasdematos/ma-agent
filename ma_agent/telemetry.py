@@ -149,21 +149,31 @@ class SimulatedTelemetryPublisher:
 
     def _next_sample(self) -> _TelemetrySample:
         self._sequence += 1
-        angle = (self._sequence % 360) * math.pi / 180.0
-        earth_radius_m = 6_371_000.0
-        delta_lat = (self._radius_m / earth_radius_m) * (180.0 / math.pi)
-        delta_lon = delta_lat / max(math.cos(math.radians(self._base_latitude)), 1e-6)
-        latitude = self._base_latitude + delta_lat * math.sin(angle)
-        longitude = self._base_longitude + delta_lon * math.cos(angle)
-        delta_east = -math.sin(angle)
-        delta_north = math.cos(angle)
-        heading_rad = math.atan2(delta_east, delta_north)
-        heading_deg = 0
+
+        # passo linear em metros por amostra
+        step = self._speed_mps * 20
+
+        # orientação fixa (ENU): 0° = norte, 90° = leste
+        theta = math.radians(0.0)
+        dy = step * math.cos(theta)  # norte +
+        dx = step * math.sin(theta)  # leste  +
+
+        # ENU -> graus (aprox. local)
+        dlat = (dy / 6_371_000.0) * (180.0 / math.pi)
+        dlon = (dx / (6_371_000.0 * max(math.cos(math.radians(self._base_latitude)), 1e-9))) * (180.0 / math.pi)
+
+        # avança a posição acumulada
+        self._base_latitude += dlat
+        self._base_longitude += dlon
+
+        # heading coerente com o deslocamento (opcional)
+        heading_deg = (math.degrees(math.atan2(dx, dy)) + 360.0) % 360.0
+
         return _TelemetrySample(
             sequence=self._sequence,
-            latitude=latitude,
-            longitude=longitude,
-            heading_deg=heading_deg,
+            latitude=self._base_latitude,
+            longitude=self._base_longitude,
+            heading_deg=heading_deg,  # ou 0.0 se preferir ignorar no cliente
             speed_mps=self._speed_mps,
             accuracy_m=self._accuracy_m,
         )
