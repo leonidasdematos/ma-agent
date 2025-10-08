@@ -20,8 +20,8 @@ def main() -> None:
         base_latitude=config.simulator_base_lat,
         base_longitude=config.simulator_base_lon,
     )
-    service = GatewayService(config, telemetry_publisher=telemetry_publisher)
-    service.start()
+    #service = GatewayService(config, telemetry_publisher=telemetry_publisher)
+    #service.start()
 
     # Mantém a thread principal viva enquanto os transports rodam em background.
     stop_event = threading.Event()
