@@ -21,6 +21,12 @@ class _Point:
     north_m: float
     active: bool
 
+@dataclass(frozen=True)
+class _Sample:
+    point: _Point
+    heading_deg: float
+    speed_mps: float
+
 
 class PlanterSimulator(TelemetryPublisher):
     """Simulate a planter performing serpentine passes on a rectangular field."""
@@ -103,7 +109,7 @@ class PlanterSimulator(TelemetryPublisher):
     def _step_distance(self) -> float:
         return self.speed_mps / self.sample_rate_hz
 
-    def _cycle_points(self) -> List[_Point]:
+    def _cycle_samples(self) -> List[_Sample]:
         step = self._step_distance()
         points: List[_Point] = []
         lane_index = 0
@@ -149,7 +155,34 @@ class PlanterSimulator(TelemetryPublisher):
             direction = next_direction
             passes_completed += 1
 
-        return points
+        samples: List[_Sample] = []
+        last_heading = 0.0
+
+        for index, point in enumerate(points):
+            if index == 0 and len(points) > 1:
+                reference = points[1]
+                delta_east = reference.east_m - point.east_m
+                delta_north = reference.north_m - point.north_m
+            elif index > 0:
+                previous = points[index - 1]
+                delta_east = point.east_m - previous.east_m
+                delta_north = point.north_m - previous.north_m
+            else:
+                delta_east = 0.0
+                delta_north = 0.0
+
+            distance = math.hypot(delta_east, delta_north)
+            if distance > 0.0:
+                heading = (math.degrees(math.atan2(delta_east, delta_north)) + 360.0) % 360.0
+                speed = distance * self.sample_rate_hz
+                last_heading = heading
+            else:
+                heading = last_heading
+                speed = 0.0
+
+            samples.append(_Sample(point=point, heading_deg=heading, speed_mps=speed))
+
+        return samples
 
     @staticmethod
     def _interpolate(
@@ -180,7 +213,8 @@ class PlanterSimulator(TelemetryPublisher):
         )
         return (self.base_lat + dlat, self.base_lon + dlon)
 
-    def _build_message(self, point: _Point, sequence: int) -> Message:
+    def _build_message(self, sample: _Sample, sequence: int) -> Message:
+        point = sample.point
         latitude, longitude = self._to_geodetic(point)
         timestamp = time.time()
         sections = [point.active] * self.row_count
@@ -191,6 +225,8 @@ class PlanterSimulator(TelemetryPublisher):
             "accuracy": self.accuracy_m,
             "sequence": sequence,
             "timestamp": timestamp,
+            "heading_deg": sample.heading_deg,
+            "speed_mps": sample.speed_mps,
             "rtk_state": "FIXED" if point.active else "HOLD",
             "implement": {
                 "active": point.active,
@@ -210,7 +246,7 @@ class _PlanterWorker(threading.Thread):
         self.simulator = simulator
         self.session = session
         self._stop_event = threading.Event()
-        self._cycle: Optional[List[_Point]] = None
+        self._cycle: Optional[List[_Sample]] = None
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -222,13 +258,13 @@ class _PlanterWorker(threading.Thread):
                 time.sleep(0.2)
                 continue
             if self._cycle is None:
-                self._cycle = self.simulator._cycle_points()
+                self._cycle = self.simulator._cycle_samples()
                 if not self._cycle:
                     return
-            for point in self._cycle:
+            for sample in self._cycle:
                 if self._stop_event.is_set():
                     break
-                message = self.simulator._build_message(point, sequence)
+                message = self.simulator._build_message(sample, sequence)
                 sent = self.session.send_message(message)
                 if sent:
                     sequence += 1
