@@ -8,11 +8,29 @@ import time
 
 from .config import AgentConfig
 from .gateway import GatewayService
+from .implement import load_implement_profile
+from .simulators import PlanterSimulator
 
 
 def main() -> None:
     config = AgentConfig.from_env()
-    service = GatewayService(config)
+    telemetry_publisher = None
+    if config.enable_planter_simulator:
+        implement_profile = load_implement_profile(config.implement_profile_path)
+        telemetry_publisher = PlanterSimulator(
+            implement_profile=implement_profile,
+            field_length_m=config.simulator_field_length_m,
+            headland_length_m=config.simulator_headland_length_m,
+            speed_mps=config.simulator_speed_mps,
+            sample_rate_hz=config.simulator_sample_rate_hz,
+            base_lat=config.simulator_base_lat,
+            base_lon=config.simulator_base_lon,
+            altitude_m=config.simulator_altitude_m,
+            passes_per_cycle=config.simulator_passes_per_cycle,
+            loop_forever=True,
+        )
+
+    service = GatewayService(config, telemetry_publisher=telemetry_publisher)
     service.start()
 
     # Mantém a thread principal viva enquanto os transports rodam em background.

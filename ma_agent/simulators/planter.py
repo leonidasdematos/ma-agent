@@ -84,6 +84,17 @@ class PlanterSimulator(TelemetryPublisher):
             worker.stop()
             worker.join(timeout=2.0)
 
+    def stop(self) -> None:
+        """Stop all background workers."""
+
+        with self._lock:
+            workers = list(self._workers.values())
+            self._workers.clear()
+        for worker in workers:
+            worker.stop()
+        for worker in workers:
+            worker.join(timeout=2.0)
+
     # Helpers ----------------------------------------------------------------
     def _on_worker_finished(self, session) -> None:
         with self._lock:
