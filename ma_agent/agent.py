@@ -8,20 +8,12 @@ import time
 
 from .config import AgentConfig
 from .gateway import GatewayService
-from .telemetry import SimulatedTelemetryPublisher
-
 
 
 def main() -> None:
     config = AgentConfig.from_env()
-    telemetry_publisher = SimulatedTelemetryPublisher(
-        sample_rate_hz=config.simulator_sample_rate_hz,
-        speed_mps=config.simulator_speed_mps,
-        base_latitude=config.simulator_base_lat,
-        base_longitude=config.simulator_base_lon,
-    )
-    #service = GatewayService(config, telemetry_publisher=telemetry_publisher)
-    #service.start()
+    service = GatewayService(config)
+    service.start()
 
     # Mantém a thread principal viva enquanto os transports rodam em background.
     stop_event = threading.Event()
@@ -39,8 +31,10 @@ def main() -> None:
     except KeyboardInterrupt:  # pragma: no cover
         pass
     finally:
-        telemetry_publisher.stop()
-
+        telemetry_publisher = getattr(service, "telemetry_publisher", None)
+        stop = getattr(telemetry_publisher, "stop", None)
+        if callable(stop):
+            stop()
 
 if __name__ == "__main__":  # pragma: no cover
     main()
