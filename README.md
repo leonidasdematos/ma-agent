@@ -88,6 +88,67 @@ O simulador percorre um trajeto em “zigue-zague”: realiza um tiro com a
 plantadeira ligada, executa a manobra de cabeceira com as linhas
 desligadas e retorna pela linha adjacente, garantindo que o monitor
 repinte o mapa corretamente.
+### Como usar o cálculo articulado
+
+O módulo `ma_agent.articulation` reproduz a cinemática utilizada pelo
+monitor Android para estimar a posição do implemento quando o gateway
+está operando no modo **articulado**. Ele recebe as posições da antena do
+trator, os vetores de orientação (`forward`/`right`) e as distâncias de
+instalação para calcular automaticamente:
+
+* o ponto de articulação (engate) no referencial local ENU;
+* o centro do implemento no passo atual e no passo anterior;
+* o eixo (vetor unitário) alinhado ao implemento, útil para desenhar a
+  barra ou calcular derrapagem;
+* um indicador se o deslocamento do implemento foi significativo o
+  bastante para atualizar o mapa.
+
+O fluxo básico é sempre o mesmo: inicialize o cache do ângulo do
+implemento com `None`, invoque `compute_articulated_centers` a cada novo
+pacote GNSS do trator e armazene o ângulo retornado para a próxima
+iteração. O exemplo abaixo mostra como integrar o cálculo com os dados
+que já existem no gateway:
+
+```python
+from ma_agent.articulation import Coordinate, compute_articulated_centers
+
+impl_theta = None  # cache persistido entre as iterações
+
+def handle_step(sample):
+    global impl_theta
+
+    result = compute_articulated_centers(
+        last_xy=Coordinate(*sample.last_antena_xy_m),
+        cur_xy=Coordinate(*sample.cur_antena_xy_m),
+        fwd=sample.forward_vector,
+        right=sample.right_vector,
+        distancia_antena=sample.distancia_antena_m,
+        offset_longitudinal=sample.offset_longitudinal_m,
+        offset_lateral=sample.offset_lateral_m,
+        work_width_m=sample.work_width_m,
+        impl_theta_rad=impl_theta,
+        tractor_heading_rad=sample.heading_rad,
+        previous_displacement=sample.prev_displacement,
+        last_fwd=sample.last_forward_vector,
+        last_right=sample.last_right_vector,
+    )
+
+    # Persista o heading do implemento para o próximo passo.
+    impl_theta = result.theta
+
+    # Use os pontos calculados para atualizar o monitor.
+    gateway.send_articulation_update(
+        articulation_xy=(result.articulation_point.x, result.articulation_point.y),
+        implement_xy=(result.current_center.x, result.current_center.y),
+        axis=result.axis,
+        has_motion=result.significant_motion,
+    )
+```
+
+Todos os parâmetros são expressos em metros e radianos no sistema de
+coordenadas local (ENU). Para manter a estabilidade, o helper cuida dos
+limiares mínimos de deslocamento (`EPS_STEP`, `EPS_IMPL`) e faz o
+“wrap” dos ângulos automaticamente.
 
 
 ### Próximos passos
