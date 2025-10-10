@@ -64,6 +64,7 @@ def compute_articulated_centers(
     offset_longitudinal: float,
     offset_lateral: float,
     work_width_m: float,
+    articulation_to_tool_m: Optional[float] = None,
     impl_theta_rad: Optional[float],
     tractor_heading_rad: Optional[float] = None,
     previous_displacement: Optional[Tuple[float, float]] = None,
@@ -86,6 +87,10 @@ def compute_articulated_centers(
         Effective work width of the implement. Used to infer the distance
         between the articulation point and the implement centre when no
         dedicated parameter is available.
+    articulation_to_tool_m:
+        Optional explicit distance (in meters) between the articulation
+        point and the implement centre. When omitted the helper derives a
+        reasonable estimate from ``work_width_m``.
     impl_theta_rad:
         Cached implement heading (radians) from the previous step. When
         ``None`` the heading is initialised to the tractor heading.
@@ -138,7 +143,10 @@ def compute_articulated_centers(
         theta_i = th_trac
     else:
         Lhitch = max(long_offset, 0.1)
-        Limpl = max(0.5 * work_width_m, 1.0)
+        if articulation_to_tool_m is not None:
+            Limpl = max(float(articulation_to_tool_m), 0.0)
+        else:
+            Limpl = max(0.5 * work_width_m, 1.0)
         alpha = _clamp(Lhitch / (Lhitch + Limpl), 0.3, 0.9)
         theta_i = _wrap_angle(impl_theta_rad + alpha * kappa * dist)
 
@@ -148,7 +156,10 @@ def compute_articulated_centers(
     axis_norm = math.hypot(axis_x, axis_y) or 1.0
     axis = (axis_x / axis_norm, axis_y / axis_norm)
 
-    Limpl = max(0.5 * work_width_m, 1.0)
+    if articulation_to_tool_m is not None:
+        Limpl = max(float(articulation_to_tool_m), 0.0)
+    else:
+        Limpl = max(0.5 * work_width_m, 1.0)
     cur_impl = articulation_point.translate(Limpl * axis[0], Limpl * axis[1])
 
     # Previous articulation point (best effort when orientation data missing)

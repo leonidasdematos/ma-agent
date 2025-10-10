@@ -6,6 +6,9 @@
   "row_count": 26,
   "row_spacing_m": 0.5,
   "hitch_to_tool_m": 4.0,
+  "articulated": true,
+  "antenna_to_articulation_m": 1.5,
+  "articulation_to_tool_m": 4.0,
   "sections": [
     {
       "kind": "seed",

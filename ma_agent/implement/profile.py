@@ -61,6 +61,9 @@ class ImplementProfile:
     row_count: int
     row_spacing_m: float
     hitch_to_tool_m: float
+    articulated: bool = False
+    antenna_to_articulation_m: Optional[float] = None
+    articulation_to_tool_m: Optional[float] = None
     sections: List[SectionProfile] = field(default_factory=list)
 
     @classmethod
@@ -75,11 +78,20 @@ class ImplementProfile:
             row_count=int(data["row_count"]),
             row_spacing_m=float(data["row_spacing_m"]),
             hitch_to_tool_m=float(data["hitch_to_tool_m"]),
+            articulated=bool(data.get("articulated", False)),
+            antenna_to_articulation_m=
+                float(data["antenna_to_articulation_m"])
+                if data.get("antenna_to_articulation_m") is not None
+                else None,
+            articulation_to_tool_m=
+                float(data["articulation_to_tool_m"])
+                if data.get("articulation_to_tool_m") is not None
+                else None,
             sections=sections,
         )
 
     def to_payload(self) -> Dict[str, Any]:
-        return {
+        payload: Dict[str, Any] = {
             "role": self.role,
             "name": self.name,
             "manufacturer": self.manufacturer,
@@ -89,6 +101,12 @@ class ImplementProfile:
             "hitch_to_tool_m": self.hitch_to_tool_m,
             "sections": [section.to_payload() for section in self.sections],
         }
+        payload["articulated"] = self.articulated
+        if self.antenna_to_articulation_m is not None:
+            payload["antenna_to_articulation_m"] = self.antenna_to_articulation_m
+        if self.articulation_to_tool_m is not None:
+            payload["articulation_to_tool_m"] = self.articulation_to_tool_m
+        return payload
 
 
 def _load_json_file(path: Path) -> Dict[str, Any]:

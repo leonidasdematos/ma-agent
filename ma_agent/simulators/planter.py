@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Tuple
 
+from ..articulation import Coordinate, compute_articulated_centers
 from ..implement import ImplementProfile
 from ..protocol.messages import Message, MessageType
 from ..telemetry import TelemetryPublisher
@@ -73,6 +74,23 @@ class PlanterSimulator(TelemetryPublisher):
         width_m = (implement_profile.row_count * implement_profile.row_spacing_m) if implement_profile else 13.0
         self.implement_width_m = width_m
         self.row_count = implement_profile.row_count if implement_profile else 26
+        self.is_articulated = bool(implement_profile.articulated) if implement_profile else False
+        antenna_to_joint = (
+            float(implement_profile.antenna_to_articulation_m)
+            if implement_profile and implement_profile.antenna_to_articulation_m is not None
+            else 0.0
+        )
+        joint_to_tool = None
+        if implement_profile:
+            if implement_profile.articulation_to_tool_m is not None:
+                joint_to_tool = float(implement_profile.articulation_to_tool_m)
+            else:
+                joint_to_tool = float(implement_profile.hitch_to_tool_m)
+        self.antenna_to_articulation_m = antenna_to_joint
+        self.articulation_to_tool_m = joint_to_tool
+        self.offset_longitudinal_m = 0.0
+        self.offset_lateral_m = 0.0
+        self.articulation_mode = "articulated" if self.is_articulated else "fixed"
 
         self._workers: dict = {}
         self._lock = threading.Lock()
@@ -234,11 +252,29 @@ class PlanterSimulator(TelemetryPublisher):
         )
         return (self.base_lat + dlat, self.base_lon + dlon)
 
-    def _build_message(self, sample: _Sample, sequence: int) -> Message:
+    def _enu_to_geodetic(self, east_m: float, north_m: float) -> Tuple[float, float]:
+        dummy = _Point(east_m=east_m, north_m=north_m, active=True)
+        return self._to_geodetic(dummy)
+
+    def _build_message(
+        self,
+        sample: _Sample,
+        sequence: int,
+        articulation: Optional[dict] = None,
+    ) -> Message:
         point = sample.point
         latitude, longitude = self._to_geodetic(point)
         timestamp = time.time()
         sections = [point.active] * self.row_count
+        implement_payload = {
+            "active": point.active,
+            "sections": sections,
+        }
+        if self.implement_profile:
+            implement_payload["mode"] = self.articulation_mode
+        if articulation:
+            implement_payload["articulation"] = articulation
+
         payload = {
             "latitude": latitude,
             "longitude": longitude,
@@ -249,10 +285,7 @@ class PlanterSimulator(TelemetryPublisher):
             "heading_deg": sample.heading_deg,
             "speed_mps": sample.speed_mps,
             "rtk_state": "FIXED" if point.active else "HOLD",
-            "implement": {
-                "active": point.active,
-                "sections": sections,
-            },
+            "implement": implement_payload,
         }
         return Message(type=MessageType.GNSS_FIX, payload=payload)
 
@@ -268,9 +301,74 @@ class _PlanterWorker(threading.Thread):
         self.session = session
         self._stop_event = threading.Event()
         self._cycle: Optional[List[_Sample]] = None
+        self._last_coordinate: Optional[Coordinate] = None
+        self._prev_displacement: Optional[Tuple[float, float]] = None
+        self._impl_theta: Optional[float] = None
+        self._last_forward: Optional[Tuple[float, float]] = None
+        self._last_right: Optional[Tuple[float, float]] = None
+        self._reset_articulation_state()
 
     def stop(self) -> None:
         self._stop_event.set()
+
+    def _reset_articulation_state(self) -> None:
+        self._last_coordinate = None
+        self._prev_displacement = None
+        self._impl_theta = None
+        self._last_forward = None
+        self._last_right = None
+
+    def _compute_articulation(self, sample: _Sample) -> Optional[dict]:
+        if not self.simulator.is_articulated:
+            return None
+
+        coordinate = Coordinate(sample.point.east_m, sample.point.north_m)
+        last_coordinate = self._last_coordinate or coordinate
+        heading_rad = math.radians(sample.heading_deg)
+        fwd = (math.sin(heading_rad), math.cos(heading_rad))
+        right = (fwd[1], -fwd[0])
+
+        state = compute_articulated_centers(
+            last_xy=last_coordinate,
+            cur_xy=coordinate,
+            fwd=fwd,
+            right=right,
+            distancia_antena=self.simulator.antenna_to_articulation_m,
+            offset_longitudinal=self.simulator.offset_longitudinal_m,
+            offset_lateral=self.simulator.offset_lateral_m,
+            work_width_m=self.simulator.implement_width_m,
+            articulation_to_tool_m=self.simulator.articulation_to_tool_m,
+            impl_theta_rad=self._impl_theta,
+            tractor_heading_rad=heading_rad,
+            previous_displacement=self._prev_displacement,
+            last_fwd=self._last_forward,
+            last_right=self._last_right,
+        )
+
+        displacement = (coordinate.x - last_coordinate.x, coordinate.y - last_coordinate.y)
+        self._prev_displacement = displacement
+        self._impl_theta = state.theta
+        self._last_forward = fwd
+        self._last_right = right
+        self._last_coordinate = coordinate
+
+        joint_lat, joint_lon = self.simulator._enu_to_geodetic(
+            state.articulation_point.x, state.articulation_point.y
+        )
+        implement_lat, implement_lon = self.simulator._enu_to_geodetic(
+            state.current_center.x, state.current_center.y
+        )
+
+        return {
+            "antenna_xy_m": [coordinate.x, coordinate.y],
+            "joint_xy_m": [state.articulation_point.x, state.articulation_point.y],
+            "implement_xy_m": [state.current_center.x, state.current_center.y],
+            "joint_latlon": [joint_lat, joint_lon],
+            "implement_latlon": [implement_lat, implement_lon],
+            "axis": [state.axis[0], state.axis[1]],
+            "theta_rad": state.theta,
+            "has_motion": state.significant_motion,
+        }
 
     def run(self) -> None:
         sequence = 1
@@ -285,11 +383,14 @@ class _PlanterWorker(threading.Thread):
             for sample in self._cycle:
                 if self._stop_event.is_set():
                     break
-                message = self.simulator._build_message(sample, sequence)
+                articulation_payload = self._compute_articulation(sample)
+                message = self.simulator._build_message(sample, sequence, articulation_payload)
                 sent = self.session.send_message(message)
                 if sent:
                     sequence += 1
                 time.sleep(sample.time_delta_s)
+                if self.simulator.loop_forever and not self._stop_event.is_set():
+                    self._reset_articulation_state()
             if not self.simulator.loop_forever:
                 break
         self.simulator._on_worker_finished(self.session)

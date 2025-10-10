@@ -59,9 +59,10 @@ echo '{"type":"HELLO","payload":{}}' | nc 127.0.0.1 7777
 Cada gateway pode atuar com funções distintas (plantadeira, pulverizador,
 etc.). O arquivo `config/implement.vence_tudo.json` descreve o equipamento
 utilizado neste ambiente de desenvolvimento: uma plantadeira **Vence
-Tudo** com 26 linhas espaçadas a cada 0,5 m, distância de 4 m entre o
-rabicho e a primeira linha, 26 seções de sementes e 2 de adubo, todas com
-suporte a taxa variável.
+Tudo** articulada com 26 linhas espaçadas a cada 0,5 m, distância de
+1,5 m entre a antena e o ponto de articulação, mais 4 m do engate até as
+linhas finais, 26 seções de sementes e 2 de adubo, todas com suporte a
+taxa variável.
 
 Durante a inicialização, o agente tenta carregar o arquivo apontado pela
 variável `MA_AGENT_IMPLEMENT_CONFIG`. Caso não exista, um perfil padrão

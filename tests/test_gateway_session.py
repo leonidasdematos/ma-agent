@@ -2,6 +2,7 @@ import base64
 
 import pytest
 
+from ma_agent.implement import load_implement_profile
 from ma_agent.session import GatewaySession
 from ma_agent.protocol.messages import Message, MessageType
 
@@ -76,6 +77,22 @@ def test_close_unregisters_dependencies(hello_message):
     assert publisher.unregistered == [session]
     assert coordinator.unregistered == [session]
 
+
+def test_info_includes_articulated_implement_details(hello_message):
+    profile = load_implement_profile()
+    session = GatewaySession(implement_profile=profile)
+
+    session.handle_message(hello_message)
+    [info] = session.handle_message(Message(type=MessageType.INFO, payload={}))
+
+    implement_payload = info.payload["implement"]
+    assert implement_payload["articulated"] is profile.articulated
+    assert implement_payload["antenna_to_articulation_m"] == pytest.approx(
+        profile.antenna_to_articulation_m
+    )
+    assert implement_payload["articulation_to_tool_m"] == pytest.approx(
+        profile.articulation_to_tool_m
+    )
 
 def test_gnss_ack_updates_state(hello_message):
     clock_values = [100.0, 200.0]

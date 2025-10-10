@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import math
 import time
+
+import pytest
 
 from ma_agent.implement import load_implement_profile
 from ma_agent.protocol.messages import Message, MessageType
@@ -53,3 +56,14 @@ def test_planter_simulator_generates_rows_and_headland():
     assert len(active_msg.payload["implement"]["sections"]) == implement.row_count
     assert all(active_msg.payload["implement"]["sections"])
     assert not any(inactive_msg.payload["implement"]["sections"])
+
+    implement_payloads = [msg.payload["implement"] for msg in captured]
+    assert any(payload.get("mode") == "articulated" for payload in implement_payloads)
+
+    articulated_samples = [payload["articulation"] for payload in implement_payloads if payload.get("articulation")]
+    assert articulated_samples, "expected articulation payloads in simulator telemetry"
+    sample = articulated_samples[0]
+    assert set(sample) >= {"antenna_xy_m", "joint_xy_m", "implement_xy_m", "theta_rad"}
+    dx = sample["antenna_xy_m"][0] - sample["joint_xy_m"][0]
+    dy = sample["antenna_xy_m"][1] - sample["joint_xy_m"][1]
+    assert math.hypot(dx, dy) == pytest.approx(implement.antenna_to_articulation_m or 0.0, rel=1e-2, abs=1e-2)
