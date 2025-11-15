@@ -69,6 +69,17 @@ variável `MA_AGENT_IMPLEMENT_CONFIG`. Caso não exista, um perfil padrão
 com as mesmas características acima (empacotado no código fonte) é
 utilizado e enviado ao monitor via mensagem `INFO`.
 
+> **Instrução rápida para o monitor Android:** ao receber o payload do
+> implemento com `"articulated": true`, utilize os campos
+> `"antenna_to_articulation_m"` e `"articulation_to_tool_m"` para
+> reconstruir a geometria. O primeiro define a distância da antena até o
+> ponto de engate, enquanto o segundo representa o comprimento entre o
+> engate e o centro das linhas — exatamente o que o helper articulado do
+> gateway envia durante a telemetria. Usando esses valores, o monitor
+> consegue posicionar o ponto de articulação e a barra final de forma
+> consistente com o modelo usado pelo gateway.
+
+
 
 ### Simulador de plantio
 
@@ -89,6 +100,28 @@ O simulador percorre um trajeto em “zigue-zague”: realiza um tiro com a
 plantadeira ligada, executa a manobra de cabeceira com as linhas
 desligadas e retorna pela linha adjacente, garantindo que o monitor
 repinte o mapa corretamente.
+
+Quando for necessário testar cenários específicos (curvas, terraços ou
+talhões irregulares) defina o arquivo `MA_AGENT_SIM_ROUTE_FILE` apontando
+para uma lista de pontos ENU (`east_m`/`north_m`) ou um GeoJSON com
+coordenadas geográficas. Também é possível indicar o formato explicitando
+`MA_AGENT_SIM_ROUTE_FORMAT=json|geojson`. O repositório já inclui um
+exemplo (`config/routes/terrace_demo.json`) que descreve duas passadas
+acompanhando curvas de nível, com trechos ativos e manobras desligadas:
+
+```json
+{
+  "description": "Curved terrace-following route with two passes",
+  "points": [
+    {"east_m": -5.0, "north_m": -35.0, "active": false},
+    {"east_m": 6.0, "north_m": 0.0, "active": true},
+    {"east_m": 19.0, "north_m": 220.0, "active": false}
+  ]
+}
+```
+
+Basta apontar `MA_AGENT_SIM_ROUTE_FILE=$(pwd)/config/routes/terrace_demo.json`
+antes de iniciar o agente para que o simulador reproduza o trajeto.
 ### Como usar o cálculo articulado
 
 O módulo `ma_agent.articulation` reproduz a cinemática utilizada pelo

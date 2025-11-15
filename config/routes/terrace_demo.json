@@ -1,0 +1,605 @@
+{
+  "description": "Curved terrace-following route with two passes",
+  "points": [
+    {
+      "east_m": -5.0,
+      "north_m": -35,
+      "active": false
+    },
+    {
+      "east_m": -5.0,
+      "north_m": -30,
+      "active": false
+    },
+    {
+      "east_m": -5.0,
+      "north_m": -25,
+      "active": false
+    },
+    {
+      "east_m": -5.0,
+      "north_m": -20,
+      "active": false
+    },
+    {
+      "east_m": -5.0,
+      "north_m": -15,
+      "active": false
+    },
+    {
+      "east_m": -5.0,
+      "north_m": -10,
+      "active": false
+    },
+    {
+      "east_m": -5.0,
+      "north_m": -5,
+      "active": false
+    },
+    {
+      "east_m": 6.0,
+      "north_m": 0,
+      "active": true
+    },
+    {
+      "east_m": 6.912,
+      "north_m": 5,
+      "active": true
+    },
+    {
+      "east_m": 7.8,
+      "north_m": 10,
+      "active": true
+    },
+    {
+      "east_m": 8.637,
+      "north_m": 15,
+      "active": true
+    },
+    {
+      "east_m": 9.401,
+      "north_m": 20,
+      "active": true
+    },
+    {
+      "east_m": 10.071,
+      "north_m": 25,
+      "active": true
+    },
+    {
+      "east_m": 10.628,
+      "north_m": 30,
+      "active": true
+    },
+    {
+      "east_m": 11.057,
+      "north_m": 35,
+      "active": true
+    },
+    {
+      "east_m": 11.346,
+      "north_m": 40,
+      "active": true
+    },
+    {
+      "east_m": 11.486,
+      "north_m": 45,
+      "active": true
+    },
+    {
+      "east_m": 11.475,
+      "north_m": 50,
+      "active": true
+    },
+    {
+      "east_m": 11.312,
+      "north_m": 55,
+      "active": true
+    },
+    {
+      "east_m": 11.001,
+      "north_m": 60,
+      "active": true
+    },
+    {
+      "east_m": 10.552,
+      "north_m": 65,
+      "active": true
+    },
+    {
+      "east_m": 9.977,
+      "north_m": 70,
+      "active": true
+    },
+    {
+      "east_m": 9.292,
+      "north_m": 75,
+      "active": true
+    },
+    {
+      "east_m": 8.515,
+      "north_m": 80,
+      "active": true
+    },
+    {
+      "east_m": 7.669,
+      "north_m": 85,
+      "active": true
+    },
+    {
+      "east_m": 6.776,
+      "north_m": 90,
+      "active": true
+    },
+    {
+      "east_m": 5.862,
+      "north_m": 95,
+      "active": true
+    },
+    {
+      "east_m": 4.952,
+      "north_m": 100,
+      "active": true
+    },
+    {
+      "east_m": 4.071,
+      "north_m": 105,
+      "active": true
+    },
+    {
+      "east_m": 3.243,
+      "north_m": 110,
+      "active": true
+    },
+    {
+      "east_m": 2.492,
+      "north_m": 115,
+      "active": true
+    },
+    {
+      "east_m": 1.838,
+      "north_m": 120,
+      "active": true
+    },
+    {
+      "east_m": 1.299,
+      "north_m": 125,
+      "active": true
+    },
+    {
+      "east_m": 0.89,
+      "north_m": 130,
+      "active": true
+    },
+    {
+      "east_m": 0.624,
+      "north_m": 135,
+      "active": true
+    },
+    {
+      "east_m": 0.506,
+      "north_m": 140,
+      "active": true
+    },
+    {
+      "east_m": 0.54,
+      "north_m": 145,
+      "active": true
+    },
+    {
+      "east_m": 0.726,
+      "north_m": 150,
+      "active": true
+    },
+    {
+      "east_m": 1.058,
+      "north_m": 155,
+      "active": true
+    },
+    {
+      "east_m": 1.527,
+      "north_m": 160,
+      "active": true
+    },
+    {
+      "east_m": 2.12,
+      "north_m": 165,
+      "active": true
+    },
+    {
+      "east_m": 2.82,
+      "north_m": 170,
+      "active": true
+    },
+    {
+      "east_m": 3.608,
+      "north_m": 175,
+      "active": true
+    },
+    {
+      "east_m": 4.463,
+      "north_m": 180,
+      "active": true
+    },
+    {
+      "east_m": 5.361,
+      "north_m": 185,
+      "active": true
+    },
+    {
+      "east_m": 6.276,
+      "north_m": 190,
+      "active": true
+    },
+    {
+      "east_m": 7.183,
+      "north_m": 195,
+      "active": true
+    },
+    {
+      "east_m": 8.058,
+      "north_m": 200,
+      "active": true
+    },
+    {
+      "east_m": 8.875,
+      "north_m": 205,
+      "active": true
+    },
+    {
+      "east_m": 9.613,
+      "north_m": 210,
+      "active": true
+    },
+    {
+      "east_m": 10.251,
+      "north_m": 215,
+      "active": true
+    },
+    {
+      "east_m": 10.771,
+      "north_m": 220,
+      "active": true
+    },
+    {
+      "east_m": 10.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 11.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 12.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 13.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 14.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 15.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 16.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 17.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 18.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 19.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 20.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 21.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 22.771,
+      "north_m": 220.0,
+      "active": false
+    },
+    {
+      "east_m": 24.5,
+      "north_m": 220.0,
+      "active": true
+    },
+    {
+      "east_m": 24.416,
+      "north_m": 215.0,
+      "active": true
+    },
+    {
+      "east_m": 24.159,
+      "north_m": 210.0,
+      "active": true
+    },
+    {
+      "east_m": 23.738,
+      "north_m": 205.0,
+      "active": true
+    },
+    {
+      "east_m": 23.167,
+      "north_m": 200.0,
+      "active": true
+    },
+    {
+      "east_m": 22.463,
+      "north_m": 195.0,
+      "active": true
+    },
+    {
+      "east_m": 21.649,
+      "north_m": 190.0,
+      "active": true
+    },
+    {
+      "east_m": 20.751,
+      "north_m": 185.0,
+      "active": true
+    },
+    {
+      "east_m": 19.797,
+      "north_m": 180.0,
+      "active": true
+    },
+    {
+      "east_m": 18.818,
+      "north_m": 175.0,
+      "active": true
+    },
+    {
+      "east_m": 17.844,
+      "north_m": 170.0,
+      "active": true
+    },
+    {
+      "east_m": 16.907,
+      "north_m": 165.0,
+      "active": true
+    },
+    {
+      "east_m": 16.037,
+      "north_m": 160.0,
+      "active": true
+    },
+    {
+      "east_m": 15.261,
+      "north_m": 155.0,
+      "active": true
+    },
+    {
+      "east_m": 14.604,
+      "north_m": 150.0,
+      "active": true
+    },
+    {
+      "east_m": 14.087,
+      "north_m": 145.0,
+      "active": true
+    },
+    {
+      "east_m": 13.726,
+      "north_m": 140.0,
+      "active": true
+    },
+    {
+      "east_m": 13.533,
+      "north_m": 135.0,
+      "active": true
+    },
+    {
+      "east_m": 13.513,
+      "north_m": 130.0,
+      "active": true
+    },
+    {
+      "east_m": 13.668,
+      "north_m": 125.0,
+      "active": true
+    },
+    {
+      "east_m": 13.993,
+      "north_m": 120.0,
+      "active": true
+    },
+    {
+      "east_m": 14.477,
+      "north_m": 115.0,
+      "active": true
+    },
+    {
+      "east_m": 15.105,
+      "north_m": 110.0,
+      "active": true
+    },
+    {
+      "east_m": 15.856,
+      "north_m": 105.0,
+      "active": true
+    },
+    {
+      "east_m": 16.708,
+      "north_m": 100.0,
+      "active": true
+    },
+    {
+      "east_m": 17.633,
+      "north_m": 95.0,
+      "active": true
+    },
+    {
+      "east_m": 18.601,
+      "north_m": 90.0,
+      "active": true
+    },
+    {
+      "east_m": 19.581,
+      "north_m": 85.0,
+      "active": true
+    },
+    {
+      "east_m": 20.543,
+      "north_m": 80.0,
+      "active": true
+    },
+    {
+      "east_m": 21.457,
+      "north_m": 75.0,
+      "active": true
+    },
+    {
+      "east_m": 22.292,
+      "north_m": 70.0,
+      "active": true
+    },
+    {
+      "east_m": 23.022,
+      "north_m": 65.0,
+      "active": true
+    },
+    {
+      "east_m": 23.624,
+      "north_m": 60.0,
+      "active": true
+    },
+    {
+      "east_m": 24.08,
+      "north_m": 55.0,
+      "active": true
+    },
+    {
+      "east_m": 24.373,
+      "north_m": 50.0,
+      "active": true
+    },
+    {
+      "east_m": 24.496,
+      "north_m": 45.0,
+      "active": true
+    },
+    {
+      "east_m": 24.444,
+      "north_m": 40.0,
+      "active": true
+    },
+    {
+      "east_m": 24.219,
+      "north_m": 35.0,
+      "active": true
+    },
+    {
+      "east_m": 23.828,
+      "north_m": 30.0,
+      "active": true
+    },
+    {
+      "east_m": 23.284,
+      "north_m": 25.0,
+      "active": true
+    },
+    {
+      "east_m": 22.603,
+      "north_m": 20.0,
+      "active": true
+    },
+    {
+      "east_m": 21.808,
+      "north_m": 15.0,
+      "active": true
+    },
+    {
+      "east_m": 20.923,
+      "north_m": 10.0,
+      "active": true
+    },
+    {
+      "east_m": 19.977,
+      "north_m": 5.0,
+      "active": true
+    },
+    {
+      "east_m": 19.0,
+      "north_m": 0.0,
+      "active": true
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -5.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -9.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -13.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -17.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -21.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -25.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -29.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -33.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -37.0,
+      "active": false
+    },
+    {
+      "east_m": 19.0,
+      "north_m": -41.0,
+      "active": false
+    }
+  ]
+}

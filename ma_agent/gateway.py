@@ -43,6 +43,8 @@ class GatewayService:
                 altitude_m=self.config.simulator_altitude_m,
                 passes_per_cycle=self.config.simulator_passes_per_cycle,
                 loop_forever=True,
+                route_file=self.config.simulator_route_file,
+                route_format=self.config.simulator_route_format,
             )
         self.telemetry_publisher = telemetry_publisher
         self.gnss_coordinator = gnss_coordinator

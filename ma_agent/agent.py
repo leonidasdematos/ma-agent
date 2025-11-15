@@ -28,6 +28,8 @@ def main() -> None:
             altitude_m=config.simulator_altitude_m,
             passes_per_cycle=config.simulator_passes_per_cycle,
             loop_forever=True,
+            route_file=config.simulator_route_file,
+            route_format=config.simulator_route_format,
         )
 
     service = GatewayService(config, telemetry_publisher=telemetry_publisher)

@@ -30,6 +30,8 @@ class AgentConfig:
     simulator_base_lat: float = -22.000000
     simulator_base_lon: float = -47.000000
     simulator_altitude_m: float = 550.0
+    simulator_route_file: Optional[str] = None
+    simulator_route_format: Optional[str] = None
 
     @classmethod
     def from_env(cls) -> "AgentConfig":
@@ -59,6 +61,8 @@ class AgentConfig:
             simulator_base_lat=float(os.environ.get("MA_AGENT_SIM_BASE_LAT", "-22.0")),
             simulator_base_lon=float(os.environ.get("MA_AGENT_SIM_BASE_LON", "-47.0")),
             simulator_altitude_m=float(os.environ.get("MA_AGENT_SIM_ALTITUDE_M", "550.0")),
+            simulator_route_file=os.environ.get("MA_AGENT_SIM_ROUTE_FILE"),
+            simulator_route_format=os.environ.get("MA_AGENT_SIM_ROUTE_FORMAT"),
         )
 
 

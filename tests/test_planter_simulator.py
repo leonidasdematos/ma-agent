@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 import time
 
@@ -67,3 +68,75 @@ def test_planter_simulator_generates_rows_and_headland():
     dx = sample["antenna_xy_m"][0] - sample["joint_xy_m"][0]
     dy = sample["antenna_xy_m"][1] - sample["joint_xy_m"][1]
     assert math.hypot(dx, dy) == pytest.approx(implement.antenna_to_articulation_m or 0.0, rel=1e-2, abs=1e-2)
+
+
+def test_planter_simulator_accepts_explicit_route_points():
+    simulator = PlanterSimulator(
+        field_length_m=20.0,
+        headland_length_m=0.0,
+        speed_mps=5.0,
+        sample_rate_hz=5.0,
+        passes_per_cycle=2,
+        loop_forever=False,
+        route_points=[
+            {"east_m": 0.0, "north_m": 0.0, "active": False},
+            {"east_m": 0.0, "north_m": 10.0, "active": True},
+            (2.0, 10.0, True),
+        ],
+    )
+
+    samples = simulator._cycle_samples()
+    assert len(samples) >= 3
+    assert samples[0].point.active is False
+    assert samples[1].point.active is True
+    assert samples[2].point.east_m == pytest.approx(2.0)
+
+
+def test_planter_simulator_loads_geojson_route(tmp_path):
+    geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"active": True},
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [-47.0, -22.0],
+                        [-46.999, -21.9995],
+                    ],
+                },
+            },
+            {
+                "type": "Feature",
+                "properties": {"active": False},
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [-46.9985, -21.9992],
+                        [-46.998, -21.9990],
+                    ],
+                },
+            },
+        ],
+    }
+    route_file = tmp_path / "route.geojson"
+    route_file.write_text(json.dumps(geojson))
+
+    simulator = PlanterSimulator(
+        field_length_m=20.0,
+        headland_length_m=0.0,
+        speed_mps=5.0,
+        sample_rate_hz=5.0,
+        passes_per_cycle=2,
+        loop_forever=False,
+        base_lat=-22.0,
+        base_lon=-47.0,
+        route_file=str(route_file),
+    )
+
+    samples = simulator._cycle_samples()
+    assert len(samples) >= 4
+    actives = [sample.point.active for sample in samples[:4]]
+    assert actives[:2] == [True, True]
+    assert actives[2:] == [False, False]

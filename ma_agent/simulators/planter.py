@@ -1,10 +1,12 @@
 """Planter field simulator that streams GNSS fixes to the monitor."""
 from __future__ import annotations
 
+import json
 import math
 import threading
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
 from ..articulation import Coordinate, compute_articulated_centers
@@ -47,6 +49,9 @@ class PlanterSimulator(TelemetryPublisher):
         accuracy_m: float = 0.05,
         passes_per_cycle: int = 80,
         loop_forever: bool = True,
+        route_points: Optional[Iterable[object]] = None,
+        route_file: Optional[str] = None,
+        route_format: Optional[str] = None,
     ) -> None:
         if sample_rate_hz <= 0:
             raise ValueError("sample_rate_hz must be positive")
@@ -70,6 +75,9 @@ class PlanterSimulator(TelemetryPublisher):
         self.accuracy_m = accuracy_m
         self.passes_per_cycle = passes_per_cycle
         self.loop_forever = loop_forever
+        self._external_route = self._load_external_route(
+            route_points=route_points, route_file=route_file, route_format=route_format
+        )
 
         width_m = (implement_profile.row_count * implement_profile.row_spacing_m) if implement_profile else 13.0
         self.implement_width_m = width_m
@@ -129,6 +137,12 @@ class PlanterSimulator(TelemetryPublisher):
         return self.speed_mps / self.sample_rate_hz
 
     def _cycle_samples(self) -> List[_Sample]:
+        if self._external_route:
+            return self._build_samples_from_points(self._external_route)
+        points = self._serpentine_points()
+        return self._build_samples_from_points(points)
+
+    def _serpentine_points(self) -> List[_Point]:
         step = self._step_distance()
         points: List[_Point] = []
         lane_index = 0
@@ -174,9 +188,14 @@ class PlanterSimulator(TelemetryPublisher):
             direction = next_direction
             passes_completed += 1
 
-        samples: List[_Sample] = []
-        last_heading = 0.0
+        return points
 
+    def _build_samples_from_points(self, points: List[_Point]) -> List[_Sample]:
+        samples: List[_Sample] = []
+        if not points:
+            return samples
+
+        last_heading = 0.0
         for index, point in enumerate(points):
             if index == 0 and len(points) > 1:
                 reference = points[1]
@@ -256,6 +275,14 @@ class PlanterSimulator(TelemetryPublisher):
         dummy = _Point(east_m=east_m, north_m=north_m, active=True)
         return self._to_geodetic(dummy)
 
+    def _geodetic_to_enu(self, latitude: float, longitude: float) -> Tuple[float, float]:
+        dlat = math.radians(latitude - self.base_lat)
+        dlon = math.radians(longitude - self.base_lon)
+        north = dlat * _EARTH_RADIUS_M
+        east = dlon * _EARTH_RADIUS_M * math.cos(math.radians(self.base_lat))
+        return (east, north)
+
+
     def _build_message(
         self,
         sample: _Sample,
@@ -288,6 +315,122 @@ class PlanterSimulator(TelemetryPublisher):
             "implement": implement_payload,
         }
         return Message(type=MessageType.GNSS_FIX, payload=payload)
+
+    def _load_external_route(
+        self,
+        *,
+        route_points: Optional[Iterable[object]],
+        route_file: Optional[str],
+        route_format: Optional[str],
+    ) -> Optional[List[_Point]]:
+        points: Optional[List[_Point]] = None
+        if route_points is not None:
+            points = [self._normalize_route_point(entry) for entry in route_points]
+        elif route_file:
+            points = self._load_route_file(route_file, route_format)
+
+        if points is not None:
+            if not points:
+                raise ValueError("External route sources must contain at least one point")
+            return points
+        return None
+
+    def _load_route_file(self, route_file: str, route_format: Optional[str]) -> List[_Point]:
+        path = Path(route_file)
+        if not path.exists():
+            raise FileNotFoundError(f"Route file '{route_file}' was not found")
+
+        data = json.loads(path.read_text())
+        fmt = (route_format or self._infer_route_format(path, data)).lower()
+        if fmt not in {"json", "geojson"}:
+            raise ValueError(f"Unsupported route format: {fmt}")
+        if fmt == "geojson":
+            return self._parse_route_geojson(data)
+        return self._parse_route_json(data)
+
+    @staticmethod
+    def _infer_route_format(path: Path, data) -> str:
+        if path.suffix.lower() in {".geojson", ".gjson"}:
+            return "geojson"
+        if isinstance(data, dict) and data.get("type") in {"FeatureCollection", "Feature", "LineString"}:
+            return "geojson"
+        return "json"
+
+    def _parse_route_json(self, data) -> List[_Point]:
+        points_data = data.get("points") if isinstance(data, dict) and "points" in data else data
+        if not isinstance(points_data, list):
+            raise ValueError("JSON route must be a list or contain a 'points' array")
+        return [self._normalize_route_point(item) for item in points_data]
+
+    def _parse_route_geojson(self, data) -> List[_Point]:
+        geometries = self._iter_geojson_geometries(data)
+        points: List[_Point] = []
+        for geometry, active in geometries:
+            coords_list = geometry.get("coordinates")
+            geom_type = geometry.get("type")
+            if geom_type == "LineString":
+                lines = [coords_list]
+            elif geom_type == "MultiLineString":
+                lines = coords_list
+            else:
+                raise ValueError(f"Unsupported GeoJSON geometry: {geom_type}")
+            for line in lines:
+                for coord in line:
+                    if len(coord) < 2:
+                        raise ValueError("GeoJSON coordinates must contain longitude and latitude")
+                    longitude, latitude = coord[:2]
+                    east, north = self._geodetic_to_enu(latitude, longitude)
+                    points.append(_Point(east_m=east, north_m=north, active=active))
+        return points
+
+    @staticmethod
+    def _iter_geojson_geometries(data) -> Iterable[Tuple[dict, bool]]:
+        if not isinstance(data, dict):
+            raise ValueError("GeoJSON route must be a JSON object")
+        data_type = data.get("type")
+        if data_type == "FeatureCollection":
+            for feature in data.get("features", []):
+                properties = feature.get("properties") or {}
+                active = bool(properties.get("active", True))
+                geometry = feature.get("geometry")
+                if geometry:
+                    yield geometry, active
+        elif data_type == "Feature":
+            properties = data.get("properties") or {}
+            active = bool(properties.get("active", True))
+            geometry = data.get("geometry")
+            if geometry:
+                yield geometry, active
+        else:
+            yield data, True
+
+    def _normalize_route_point(self, entry: object) -> _Point:
+        if isinstance(entry, _Point):
+            return entry
+        if isinstance(entry, dict):
+            active = bool(entry.get("active", entry.get("is_active", True)))
+            east_value = entry.get("east_m") if "east_m" in entry else entry.get("east")
+            north_value = entry.get("north_m") if "north_m" in entry else entry.get("north")
+            if east_value is not None and north_value is not None:
+                east = float(east_value)
+                north = float(north_value)
+                return _Point(east_m=east, north_m=north, active=active)
+            if "latitude" in entry or "lat" in entry:
+                latitude = float(entry.get("latitude", entry.get("lat")))
+                longitude = float(entry.get("longitude", entry.get("lon")))
+                east, north = self._geodetic_to_enu(latitude, longitude)
+                return _Point(east_m=east, north_m=north, active=active)
+            raise ValueError("Route point dictionaries must include east/north or lat/lon")
+
+        if isinstance(entry, (list, tuple)):
+            if len(entry) < 2:
+                raise ValueError("Route point tuples must include east and north values")
+            east = float(entry[0])
+            north = float(entry[1])
+            active = bool(entry[2]) if len(entry) > 2 else True
+            return _Point(east_m=east, north_m=north, active=active)
+
+        raise TypeError(f"Unsupported route point representation: {entry!r}")
 
 
 class _PlanterWorker(threading.Thread):
