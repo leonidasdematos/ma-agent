@@ -61,8 +61,8 @@ class AgentConfig:
             simulator_base_lat=float(os.environ.get("MA_AGENT_SIM_BASE_LAT", "-22.0")),
             simulator_base_lon=float(os.environ.get("MA_AGENT_SIM_BASE_LON", "-47.0")),
             simulator_altitude_m=float(os.environ.get("MA_AGENT_SIM_ALTITUDE_M", "550.0")),
-            simulator_route_file=os.environ.get("MA_AGENT_SIM_ROUTE_FILE"),
-            simulator_route_format=os.environ.get("MA_AGENT_SIM_ROUTE_FORMAT"),
+            simulator_route_file=os.environ.get("MA_AGENT_SIM_ROUTE_FILE=$(pwd)/config/routes/rota_plantio_terracos.geojson"),
+            simulator_route_format=os.environ.get("MA_AGENT_SIM_ROUTE_FORMAT=geojson"),
         )
 
 
