@@ -140,3 +140,20 @@ def test_planter_simulator_loads_geojson_route(tmp_path):
     actives = [sample.point.active for sample in samples[:4]]
     assert actives[:2] == [True, True]
     assert actives[2:] == [False, False]
+
+
+def test_planter_simulator_resolves_repo_route_paths():
+    simulator = PlanterSimulator(
+        field_length_m=20.0,
+        headland_length_m=0.0,
+        speed_mps=5.0,
+        sample_rate_hz=5.0,
+        passes_per_cycle=2,
+        loop_forever=False,
+        base_lat=-22.0,
+        base_lon=-47.0,
+        route_file="terrace_geo_demo.geojson",
+    )
+
+    samples = simulator._cycle_samples()
+    assert samples, "should load samples from packaged routes"

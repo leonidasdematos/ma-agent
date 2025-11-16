@@ -336,9 +336,8 @@ class PlanterSimulator(TelemetryPublisher):
         return None
 
     def _load_route_file(self, route_file: str, route_format: Optional[str]) -> List[_Point]:
-        path = Path(route_file)
-        if not path.exists():
-            raise FileNotFoundError(f"Route file '{route_file}' was not found")
+        path = self._resolve_route_path(route_file)
+
 
         data = json.loads(path.read_text())
         fmt = (route_format or self._infer_route_format(path, data)).lower()
@@ -347,6 +346,22 @@ class PlanterSimulator(TelemetryPublisher):
         if fmt == "geojson":
             return self._parse_route_geojson(data)
         return self._parse_route_json(data)
+
+    @staticmethod
+    def _resolve_route_path(route_file: str) -> Path:
+        path = Path(route_file)
+        if path.exists():
+            return path
+
+        search_roots = [Path.cwd(), Path(__file__).resolve().parents[2] / "config" / "routes"]
+        if not path.is_absolute():
+            for root in search_roots:
+                candidate = root / path
+                if candidate.exists():
+                    return candidate
+
+        raise FileNotFoundError(f"Route file '{route_file}' was not found")
+
 
     @staticmethod
     def _infer_route_format(path: Path, data) -> str:

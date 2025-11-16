@@ -121,7 +121,10 @@ acompanhando curvas de nível, com trechos ativos e manobras desligadas:
 ```
 
 Basta apontar `MA_AGENT_SIM_ROUTE_FILE=$(pwd)/config/routes/terrace_demo.json`
-antes de iniciar o agente para que o simulador reproduza o trajeto.
+antes de iniciar o agente para que o simulador reproduza o trajeto. Também é
+possível informar apenas o nome do arquivo (ex.: `MA_AGENT_SIM_ROUTE_FILE=terrace_geo_demo.geojson`),
+pois o simulador busca automaticamente em `config/routes/` quando o caminho não
+for absoluto.
 ### Como usar o cálculo articulado
 
 O módulo `ma_agent.articulation` reproduz a cinemática utilizada pelo
