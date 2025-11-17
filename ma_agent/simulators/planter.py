@@ -211,18 +211,19 @@ class PlanterSimulator(TelemetryPublisher):
         return points
 
     def _build_samples_from_points(self, points: List[_Point]) -> List[_Sample]:
+        densified_points = self._densify_points(points)
         samples: List[_Sample] = []
-        if not points:
+        if not densified_points:
             return samples
 
         last_heading = 0.0
-        for index, point in enumerate(points):
-            if index == 0 and len(points) > 1:
-                reference = points[1]
+        for index, point in enumerate(densified_points):
+            if index == 0 and len(densified_points) > 1:
+                reference = densified_points[1]
                 delta_east = reference.east_m - point.east_m
                 delta_north = reference.north_m - point.north_m
             elif index > 0:
-                previous = points[index - 1]
+                previous = densified_points[index - 1]
                 delta_east = point.east_m - previous.east_m
                 delta_north = point.north_m - previous.north_m
             else:
@@ -247,6 +248,26 @@ class PlanterSimulator(TelemetryPublisher):
             )
 
         return samples
+
+    def _densify_points(self, points: List[_Point]) -> List[_Point]:
+        if not points:
+            return []
+
+        target_rate = max(self.sample_rate_hz, 2.0)
+        max_step_distance = max(1e-6, self.speed_mps / target_rate)
+        densified: List[_Point] = [points[0]]
+        last_point = (points[0].east_m, points[0].north_m)
+
+        for point in points[1:]:
+            start = (densified[-1].east_m, densified[-1].north_m)
+            for candidate in self._interpolate(start, (point.east_m, point.north_m), max_step_distance, last_point):
+                densified.append(
+                    _Point(east_m=candidate[0], north_m=candidate[1], active=point.active)
+                )
+                last_point = candidate
+
+        return densified
+
 
     def _speed_variation(self, *, index: int, is_active: bool) -> float:
         """Return a small multiplier offset applied to the base speed.

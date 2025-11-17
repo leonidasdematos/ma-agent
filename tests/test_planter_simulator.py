@@ -161,6 +161,28 @@ def test_planter_simulator_limits_speed_on_sparse_routes():
     assert min(speeds) > 2.0
     assert max(speeds) < 3.0
 
+def test_planter_simulator_limits_time_delta_on_sparse_routes():
+    simulator = PlanterSimulator(
+        field_length_m=20.0,
+        headland_length_m=0.0,
+        speed_mps=2.5,
+        sample_rate_hz=2.0,
+        passes_per_cycle=2,
+        loop_forever=False,
+        route_points=[
+            {"east_m": 0.0, "north_m": 0.0, "active": True},
+            {"east_m": 250.0, "north_m": 0.0, "active": True},
+        ],
+    )
+
+    samples = simulator._cycle_samples()
+    assert samples
+    max_delta = max(sample.time_delta_s for sample in samples)
+
+    assert max_delta <= 0.55
+
+
+
 
 def test_planter_simulator_resolves_repo_route_paths():
     simulator = PlanterSimulator(
