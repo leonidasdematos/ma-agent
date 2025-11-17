@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import threading
 import time
@@ -11,11 +12,13 @@ from typing import Iterable, List, Optional, Tuple
 
 from ..articulation import Coordinate, compute_articulated_centers
 from ..implement import ImplementProfile
+from ..paths import AGENT_ROOT
 from ..protocol.messages import Message, MessageType
 from ..telemetry import TelemetryPublisher
 
 
 _EARTH_RADIUS_M = 6_378_137.0
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -75,7 +78,7 @@ class PlanterSimulator(TelemetryPublisher):
         self.accuracy_m = accuracy_m
         self.passes_per_cycle = passes_per_cycle
         self.loop_forever = loop_forever
-        self._external_route = self._load_external_route(
+        self._external_route, self._route_source = self._load_external_route(
             route_points=route_points, route_file=route_file, route_format=route_format
         )
 
@@ -102,6 +105,18 @@ class PlanterSimulator(TelemetryPublisher):
 
         self._workers: dict = {}
         self._lock = threading.Lock()
+
+        if self._external_route:
+            LOGGER.info(
+                "planter simulator using external route from %s (%d points)",
+                self._route_source,
+                len(self._external_route),
+            )
+        else:
+            LOGGER.info(
+                "planter simulator using serpentine pattern (passes_per_cycle=%d)",
+                self.passes_per_cycle,
+            )
 
     # TelemetryPublisher API -------------------------------------------------
     def register_session(self, session) -> None:
@@ -322,22 +337,24 @@ class PlanterSimulator(TelemetryPublisher):
         route_points: Optional[Iterable[object]],
         route_file: Optional[str],
         route_format: Optional[str],
-    ) -> Optional[List[_Point]]:
+    ) -> Tuple[Optional[List[_Point]], Optional[str]]:
         points: Optional[List[_Point]] = None
+        source: Optional[str] = None
         if route_points is not None:
             points = [self._normalize_route_point(entry) for entry in route_points]
+            source = "inline route_points"
         elif route_file:
-            points = self._load_route_file(route_file, route_format)
+            path = self._resolve_route_path(route_file)
+            points = self._load_route_file(path, route_format)
+            source = str(path)
 
         if points is not None:
             if not points:
                 raise ValueError("External route sources must contain at least one point")
-            return points
-        return None
+                return points, source
+            return None, None
 
-    def _load_route_file(self, route_file: str, route_format: Optional[str]) -> List[_Point]:
-        path = self._resolve_route_path(route_file)
-
+    def _load_route_file(self, path: Path, route_format: Optional[str]) -> List[_Point]:
 
         data = json.loads(path.read_text())
         fmt = (route_format or self._infer_route_format(path, data)).lower()
@@ -353,12 +370,22 @@ class PlanterSimulator(TelemetryPublisher):
         if path.exists():
             return path
 
-        search_roots = [Path.cwd(), Path(__file__).resolve().parents[2] / "config" / "routes"]
+        repo_routes = Path(__file__).resolve().parents[2] / "config" / "routes"
+        search_roots = [
+            Path.cwd(),
+            AGENT_ROOT,
+            AGENT_ROOT / "config",
+            AGENT_ROOT / "config" / "routes",
+            repo_routes,
+        ]
         if not path.is_absolute():
             for root in search_roots:
                 candidate = root / path
                 if candidate.exists():
                     return candidate
+            fallback = repo_routes / path.name
+            if fallback.exists():
+                return fallback
 
         raise FileNotFoundError(f"Route file '{route_file}' was not found")
 

@@ -157,3 +157,40 @@ def test_planter_simulator_resolves_repo_route_paths():
 
     samples = simulator._cycle_samples()
     assert samples, "should load samples from packaged routes"
+
+
+def test_planter_simulator_resolves_agent_root_routes(tmp_path, monkeypatch):
+    from ma_agent import simulators as simulator_pkg
+
+    route_dir = tmp_path / "config" / "routes"
+    route_dir.mkdir(parents=True)
+    geojson = {
+        "type": "Feature",
+        "properties": {"active": True},
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [-47.0, -22.0],
+                [-46.9995, -21.9995],
+            ],
+        },
+    }
+    route_path = route_dir / "agent_root_route.geojson"
+    route_path.write_text(json.dumps(geojson))
+
+    monkeypatch.setattr(simulator_pkg.planter, "AGENT_ROOT", tmp_path)
+
+    simulator = simulator_pkg.PlanterSimulator(
+        field_length_m=20.0,
+        headland_length_m=0.0,
+        speed_mps=5.0,
+        sample_rate_hz=5.0,
+        passes_per_cycle=2,
+        loop_forever=False,
+        base_lat=-22.0,
+        base_lon=-47.0,
+        route_file="agent_root_route.geojson",
+    )
+
+    samples = simulator._cycle_samples()
+    assert samples, "should load samples from AGENT_ROOT-configured routes"
