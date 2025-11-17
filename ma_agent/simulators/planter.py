@@ -356,8 +356,8 @@ class PlanterSimulator(TelemetryPublisher):
         if points is not None:
             if not points:
                 raise ValueError("External route sources must contain at least one point")
-                return points, source
-            return None
+            return points, source
+        return None
 
     def _load_route_file(self, path: Path, route_format: Optional[str]) -> List[_Point]:
 

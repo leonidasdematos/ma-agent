@@ -152,7 +152,7 @@ def test_planter_simulator_resolves_repo_route_paths():
         loop_forever=False,
         base_lat=-22.0,
         base_lon=-47.0,
-        route_file="terrace_geo_demo.geojson",
+        route_file="rota_plantio_terracos.geojson",
     )
 
     samples = simulator._cycle_samples()

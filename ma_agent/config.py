@@ -1,9 +1,10 @@
 """Configuration model for the gateway agent."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
 import sys
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 
@@ -42,7 +43,10 @@ class AgentConfig:
             bluetooth_channel=int(os.environ.get("MA_AGENT_BT_CHANNEL", "1")),
             service_name=os.environ.get("MA_AGENT_SERVICE_NAME", "MAGateway"),
             service_uuid=os.environ.get("MA_AGENT_BT_SERVICE_UUID"),
-            implement_profile_path=os.environ.get("MA_AGENT_IMPLEMENT_CONFIG"),
+            implement_profile_path=os.environ.get(
+                "MA_AGENT_IMPLEMENT_CONFIG",
+                str(Path.cwd() / "config" / "implement.vence_tudo.json"),
+            ),
             enable_planter_simulator=os.environ.get("MA_AGENT_ENABLE_SIMULATOR", "1")
                                      not in {"0", "false", "False"},
             simulator_field_length_m=float(
@@ -61,8 +65,14 @@ class AgentConfig:
             simulator_base_lat=float(os.environ.get("MA_AGENT_SIM_BASE_LAT", "-22.0")),
             simulator_base_lon=float(os.environ.get("MA_AGENT_SIM_BASE_LON", "-47.0")),
             simulator_altitude_m=float(os.environ.get("MA_AGENT_SIM_ALTITUDE_M", "550.0")),
-            simulator_route_file=os.environ.get("MA_AGENT_SIM_ROUTE_FILE=$(pwd)/config/routes/rota_plantio_terracos.geojson"),
-            simulator_route_format=os.environ.get("MA_AGENT_SIM_ROUTE_FORMAT=geojson"),
+            simulator_route_file=os.environ.get(
+                "MA_AGENT_SIM_ROUTE_FILE",
+                str(Path.cwd() / "config" / "routes" / "rota_plantio_terracos.geojson"),
+            ),
+            simulator_route_format=os.environ.get(
+                "MA_AGENT_SIM_ROUTE_FORMAT",
+                "geojson",
+            ),
         )
 
 

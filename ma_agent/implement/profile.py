@@ -126,6 +126,8 @@ def load_implement_profile(explicit_path: Optional[str | Path] = None) -> Implem
     if explicit_path:
         candidates.append(Path(explicit_path))
     candidates.append(IMPLEMENT_CONFIG_FILE)
+    candidates.append(Path(__file__).resolve().parents[2] / "config" / _DEFAULT_RESOURCE)
+
 
     for candidate in candidates:
         if candidate and candidate.exists():
