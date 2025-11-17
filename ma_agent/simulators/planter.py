@@ -232,9 +232,9 @@ class PlanterSimulator(TelemetryPublisher):
             distance = math.hypot(delta_east, delta_north)
             if distance > 0.0:
                 heading = (math.degrees(math.atan2(delta_east, delta_north)) + 360.0) % 360.0
-                base_speed = distance * self.sample_rate_hz
                 speed_factor = 1.0 + self._speed_variation(index=index, is_active=point.active)
-                speed = max(0.05, base_speed * speed_factor)
+                target_speed = max(0.05, self.speed_mps * speed_factor)
+                speed = target_speed
                 last_heading = heading
                 time_delta = distance / speed if speed > 0.0 else 1.0 / self.sample_rate_hz
             else:

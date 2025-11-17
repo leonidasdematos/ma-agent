@@ -141,6 +141,26 @@ def test_planter_simulator_loads_geojson_route(tmp_path):
     assert actives[:2] == [True, True]
     assert actives[2:] == [False, False]
 
+def test_planter_simulator_limits_speed_on_sparse_routes():
+    simulator = PlanterSimulator(
+        field_length_m=20.0,
+        headland_length_m=0.0,
+        speed_mps=2.5,
+        sample_rate_hz=5.0,
+        passes_per_cycle=2,
+        loop_forever=False,
+        route_points=[
+            {"east_m": 0.0, "north_m": 0.0, "active": True},
+            {"east_m": 200.0, "north_m": 0.0, "active": True},
+        ],
+    )
+
+    samples = simulator._cycle_samples()
+    speeds = [sample.speed_mps for sample in samples]
+
+    assert min(speeds) > 2.0
+    assert max(speeds) < 3.0
+
 
 def test_planter_simulator_resolves_repo_route_paths():
     simulator = PlanterSimulator(
