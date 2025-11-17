@@ -78,9 +78,14 @@ class PlanterSimulator(TelemetryPublisher):
         self.accuracy_m = accuracy_m
         self.passes_per_cycle = passes_per_cycle
         self.loop_forever = loop_forever
-        self._external_route, self._route_source = self._load_external_route(
+        route_info = self._load_external_route(
             route_points=route_points, route_file=route_file, route_format=route_format
         )
+
+        if route_info is None:
+            self._external_route, self._route_source = None, None
+        else:
+            self._external_route, self._route_source = route_info
 
         width_m = (implement_profile.row_count * implement_profile.row_spacing_m) if implement_profile else 13.0
         self.implement_width_m = width_m
@@ -337,7 +342,7 @@ class PlanterSimulator(TelemetryPublisher):
         route_points: Optional[Iterable[object]],
         route_file: Optional[str],
         route_format: Optional[str],
-    ) -> Tuple[Optional[List[_Point]], Optional[str]]:
+    ) -> Optional[Tuple[List[_Point], Optional[str]]]:
         points: Optional[List[_Point]] = None
         source: Optional[str] = None
         if route_points is not None:
@@ -352,7 +357,7 @@ class PlanterSimulator(TelemetryPublisher):
             if not points:
                 raise ValueError("External route sources must contain at least one point")
                 return points, source
-            return None, None
+            return None
 
     def _load_route_file(self, path: Path, route_format: Optional[str]) -> List[_Point]:
 
