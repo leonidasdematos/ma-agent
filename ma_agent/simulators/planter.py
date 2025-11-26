@@ -600,8 +600,8 @@ class _PlanterWorker(threading.Thread):
                 if sent:
                     sequence += 1
                 time.sleep(sample.time_delta_s)
-                if self.simulator.loop_forever and not self._stop_event.is_set():
-                    self._reset_articulation_state()
+            if self.simulator.loop_forever and not self._stop_event.is_set():
+                self._reset_articulation_state()
             if not self.simulator.loop_forever:
                 break
         self.simulator._on_worker_finished(self.session)
