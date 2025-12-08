@@ -327,34 +327,49 @@ class PlanterSimulator(TelemetryPublisher):
     def _build_message(
         self,
         sample: _Sample,
-        sequence: int,
         articulation: Optional[dict] = None,
     ) -> Message:
         point = sample.point
         latitude, longitude = self._to_geodetic(point)
         timestamp = time.time()
+
+        # GNSS_FIX message (tractor pose + implement pose/state).
+        # Headings follow the mobile app convention: 0° = geographic north, clockwise positive.
         sections = [point.active] * self.row_count
-        implement_payload = {
-            "active": point.active,
-            "sections": sections,
-        }
-        if self.implement_profile:
-            implement_payload["mode"] = self.articulation_mode
-        if articulation:
-            implement_payload["articulation"] = articulation
+        sections_mask = 0
+        for index, enabled in enumerate(sections):
+            if enabled:
+                sections_mask |= 1 << index
+
+        implement_lat = articulation.get("lat") if articulation else None
+        implement_lon = articulation.get("lon") if articulation else None
+        implement_heading = articulation.get("heading_deg") if articulation else None
 
         payload = {
-            "latitude": latitude,
-            "longitude": longitude,
-            "altitude": self.altitude_m,
-            "accuracy": self.accuracy_m,
-            "sequence": sequence,
             "timestamp": timestamp,
-            "heading_deg": sample.heading_deg,
-            "speed_mps": sample.speed_mps,
-            "rtk_state": "FIXED" if point.active else "HOLD",
-            "implement": implement_payload,
+            "rtk_state": "FIXED" if point.active else "SINGLE",
+            "tractor": {
+                "lat": latitude,
+                "lon": longitude,
+                "alt_m": self.altitude_m,
+                "accuracy_m": self.accuracy_m,
+                "heading_deg": sample.heading_deg,
+                "speed_mps": sample.speed_mps,
+            },
+            "implement": {
+                "active": point.active,
+                "mode": self.articulation_mode,
+                "lat": implement_lat if implement_lat is not None else latitude,
+                "lon": implement_lon if implement_lon is not None else longitude,
+                "heading_deg": implement_heading
+                if implement_heading is not None
+                else sample.heading_deg,
+                "sections_mask": sections_mask,
+                "rate_value": None,
+            },
         }
+
+        # sections_mask is constructed by turning each boolean section flag into a bit (bit i => section i).
         return Message(type=MessageType.GNSS_FIX, payload=payload)
 
     def _load_external_route(
@@ -563,26 +578,18 @@ class _PlanterWorker(threading.Thread):
         self._last_right = right
         self._last_coordinate = coordinate
 
-        joint_lat, joint_lon = self.simulator._enu_to_geodetic(
-            state.articulation_point.x, state.articulation_point.y
-        )
         implement_lat, implement_lon = self.simulator._enu_to_geodetic(
             state.current_center.x, state.current_center.y
         )
 
         return {
-            "antenna_xy_m": [coordinate.x, coordinate.y],
-            "joint_xy_m": [state.articulation_point.x, state.articulation_point.y],
-            "implement_xy_m": [state.current_center.x, state.current_center.y],
-            "joint_latlon": [joint_lat, joint_lon],
-            "implement_latlon": [implement_lat, implement_lon],
-            "axis": [state.axis[0], state.axis[1]],
-            "theta_rad": state.theta,
+            "lat": implement_lat,
+            "lon": implement_lon,
+            "heading_deg": (math.degrees(state.theta) + 360.0) % 360.0,
             "has_motion": state.significant_motion,
         }
 
     def run(self) -> None:
-        sequence = 1
         while not self._stop_event.is_set():
             if not self.session.can_stream():
                 time.sleep(0.2)
@@ -595,10 +602,8 @@ class _PlanterWorker(threading.Thread):
                 if self._stop_event.is_set():
                     break
                 articulation_payload = self._compute_articulation(sample)
-                message = self.simulator._build_message(sample, sequence, articulation_payload)
-                sent = self.session.send_message(message)
-                if sent:
-                    sequence += 1
+                message = self.simulator._build_message(sample, articulation_payload)
+                self.session.send_message(message)
                 time.sleep(sample.time_delta_s)
             if self.simulator.loop_forever and not self._stop_event.is_set():
                 self._reset_articulation_state()
