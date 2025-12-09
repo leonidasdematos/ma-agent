@@ -45,31 +45,19 @@ class _TelemetrySample:
     accuracy_m: float
 
     def to_message(self) -> Message:
-        """Transform the sample into a simplified GNSS fix message."""
+        """Transform the sample into a GNSS fix message."""
 
-        timestamp = time.time()
+        timestamp_ms = int(time.time() * 1000)
         return Message(
             type=MessageType.GNSS_FIX,
             payload={
-                "timestamp": timestamp,
-                "rtk_state": "SINGLE",
-                "tractor": {
-                    "lat": self.latitude,
-                    "lon": self.longitude,
-                    "alt_m": 0.0,
-                    "accuracy_m": self.accuracy_m,
-                    "heading_deg": self.heading_deg,
-                    "speed_mps": self.speed_mps,
-                },
-                "implement": {
-                    "active": True,
-                    "mode": "fixed",
-                    "lat": self.latitude,
-                    "lon": self.longitude,
-                    "heading_deg": self.heading_deg,
-                    "sections_mask": (1 << 0),
-                    "rate_value": None,
-                },
+                "sequence": self.sequence,
+                "latitude": self.latitude,
+                "longitude": self.longitude,
+                "heading_deg": self.heading_deg,
+                "speed_mps": self.speed_mps,
+                "accuracy_m": self.accuracy_m,
+                "timestamp_ms": timestamp_ms,
             },
         )
 

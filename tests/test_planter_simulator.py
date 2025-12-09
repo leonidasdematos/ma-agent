@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import time
 
 import pytest
@@ -53,12 +54,20 @@ def test_planter_simulator_generates_rows_and_headland():
     active_msg = next(msg for msg in captured if msg.payload["implement"]["active"])
     inactive_msg = next(msg for msg in captured if not msg.payload["implement"]["active"])
 
-    full_mask = (1 << implement.row_count) - 1
-    assert active_msg.payload["implement"]["sections_mask"] == full_mask
-    assert inactive_msg.payload["implement"]["sections_mask"] == 0
+    assert len(active_msg.payload["implement"]["sections"]) == implement.row_count
+    assert all(active_msg.payload["implement"]["sections"])
+    assert not any(inactive_msg.payload["implement"]["sections"])
 
     implement_payloads = [msg.payload["implement"] for msg in captured]
     assert any(payload.get("mode") == "articulated" for payload in implement_payloads)
+
+    articulated_samples = [payload["articulation"] for payload in implement_payloads if payload.get("articulation")]
+    assert articulated_samples, "expected articulation payloads in simulator telemetry"
+    sample = articulated_samples[0]
+    assert set(sample) >= {"antenna_xy_m", "joint_xy_m", "implement_xy_m", "theta_rad"}
+    dx = sample["antenna_xy_m"][0] - sample["joint_xy_m"][0]
+    dy = sample["antenna_xy_m"][1] - sample["joint_xy_m"][1]
+    assert math.hypot(dx, dy) == pytest.approx(implement.antenna_to_articulation_m or 0.0, rel=1e-2, abs=1e-2)
 
 
 def test_planter_simulator_accepts_explicit_route_points():
@@ -80,7 +89,7 @@ def test_planter_simulator_accepts_explicit_route_points():
     assert len(samples) >= 3
     assert samples[0].point.active is False
     assert samples[1].point.active is True
-    assert any(sample.point.east_m == pytest.approx(2.0) for sample in samples)
+    assert samples[2].point.east_m == pytest.approx(2.0)
 
 
 def test_planter_simulator_loads_geojson_route(tmp_path):
@@ -128,9 +137,9 @@ def test_planter_simulator_loads_geojson_route(tmp_path):
 
     samples = simulator._cycle_samples()
     assert len(samples) >= 4
-    actives = [sample.point.active for sample in samples]
-    assert actives[0] is True
-    assert actives[-1] is False
+    actives = [sample.point.active for sample in samples[:4]]
+    assert actives[:2] == [True, True]
+    assert actives[2:] == [False, False]
 
 def test_planter_simulator_limits_speed_on_sparse_routes():
     simulator = PlanterSimulator(
