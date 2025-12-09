@@ -160,7 +160,12 @@ def compute_articulated_centers(
         Limpl = max(float(articulation_to_tool_m), 0.0)
     else:
         Limpl = max(0.5 * work_width_m, 1.0)
-    cur_impl = articulation_point.translate(Limpl * axis[0], Limpl * axis[1])
+
+    # Trailing implements sit behind the articulation point along the heading
+    # axis.  The previous implementation used a positive offset, placing the
+    # implement ahead of the tractor and causing unrealistic behaviour in the
+    # simulator.
+    cur_impl = articulation_point.translate(-Limpl * axis[0], -Limpl * axis[1])
 
     # Previous articulation point (best effort when orientation data missing)
     fwd_prev = last_fwd if last_fwd is not None else fwd
@@ -177,8 +182,10 @@ def compute_articulated_centers(
         )
         norm = math.hypot(*last_axis) or 1.0
         last_axis = (last_axis[0] / norm, last_axis[1] / norm)
-    last_impl = Coordinate(Jlx + Limpl * last_axis[0], Jly + Limpl * last_axis[1])
-
+    last_impl = Coordinate(
+        Jlx - Limpl * last_axis[0],
+        Jly - Limpl * last_axis[1],
+    )
     significant_motion = cur_impl.distance_to(last_impl) >= EPS_IMPL
 
     return ArticulationState(
