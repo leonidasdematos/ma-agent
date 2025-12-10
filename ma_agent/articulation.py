@@ -125,6 +125,12 @@ def compute_articulated_centers(
     )"""
 
     long_offset = distancia_antena + offset_longitudinal
+    Lhitch = max(long_offset, 0.1)
+    if articulation_to_tool_m is not None:
+        Limpl = max(float(articulation_to_tool_m), 0.0)
+    else:
+        Limpl = max(0.5 * work_width_m, 1.0)
+
 
     # 1) Articulation point for the current step
     Jx = cur_xy.x - long_offset * fwd[0] + offset_lateral * right[0]
@@ -160,13 +166,11 @@ def compute_articulated_centers(
     if impl_theta_rad is None:
         theta_i = th_trac
     else:
-        Lhitch = max(long_offset, 0.1)
-        if articulation_to_tool_m is not None:
-            Limpl = max(float(articulation_to_tool_m), 0.0)
-        else:
-            Limpl = max(0.5 * work_width_m, 1.0)
         alpha = _clamp(Lhitch / (Lhitch + Limpl), 0.3, 0.9)
         theta_i = _wrap_angle(impl_theta_rad + alpha * kappa * dist)
+        heading_error = _wrap_angle(th_trac - theta_i)
+        relax_rate = _clamp(dist / max(Limpl, 0.1), 0.0, 1.0)
+        theta_i = _wrap_angle(theta_i + (1.0 - alpha) * heading_error * relax_rate)
 
     # 3) Implement axis and centres
     # The implement trails the tractor, so its centre lies behind the
@@ -179,10 +183,6 @@ def compute_articulated_centers(
     axis_norm = math.hypot(axis_x, axis_y) or 1.0
     axis = (axis_x / axis_norm, axis_y / axis_norm)
 
-    if articulation_to_tool_m is not None:
-        Limpl = max(float(articulation_to_tool_m), 0.0)
-    else:
-        Limpl = max(0.5 * work_width_m, 1.0)
     cur_impl = articulation_point.translate(Limpl * axis[0], Limpl * axis[1])
 
     # Previous articulation point (best effort when orientation data missing)
