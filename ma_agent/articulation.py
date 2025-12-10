@@ -105,6 +105,24 @@ def compute_articulated_centers(
         unavailable the current orientation is used as a reasonable
         approximation.
     """
+    print(
+        "\n[compute_articulated_centers] CHAMADA",
+        f"\n last_xy = {last_xy}",
+        f"\n cur_xy = {cur_xy}",
+        f"\n fwd = {fwd}",
+        f"\n right = {right}",
+        f"\n distancia_antena = {distancia_antena}",
+        f"\n offset_longitudinal = {offset_longitudinal}",
+        f"\n offset_lateral = {offset_lateral}",
+        f"\n work_width_m = {work_width_m}",
+        f"\n articulation_to_tool_m = {articulation_to_tool_m}",
+        f"\n impl_theta_rad = {impl_theta_rad}",
+        f"\n tractor_heading_rad = {tractor_heading_rad}",
+        f"\n previous_displacement = {previous_displacement}",
+        f"\n last_fwd = {last_fwd}",
+        f"\n last_right = {last_right}",
+        "\n---------------------------------------------"
+    )
 
     long_offset = distancia_antena + offset_longitudinal
 
