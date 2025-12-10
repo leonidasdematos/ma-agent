@@ -173,17 +173,21 @@ def compute_articulated_centers(
         theta_i = _wrap_angle(theta_i + (1.0 - alpha) * heading_error * relax_rate)
 
     # 3) Implement axis and centres
-    # The implement trails the tractor, so its centre lies behind the
-    # articulation point relative to the heading. The monitor expects the axis
-    # to point from the articulation towards the tool (i.e., backwards). Use
-    # the negative heading vectors to ensure the implement is positioned
-    # behind the hitch instead of in front of the tractor.
-    axis_x = -math.sin(theta_i)
-    axis_y = -math.cos(theta_i)
-    axis_norm = math.hypot(axis_x, axis_y) or 1.0
-    axis = (axis_x / axis_norm, axis_y / axis_norm)
+    # articulation point relative to the heading. The line from the hitch to
+    # the tool should intersect the implement bar at a right angle (a "T"
+    # shape). Use the negative heading vectors to ensure the implement is
+    # positioned behind the hitch instead of in front of the tractor and a
+    # perpendicular axis to represent the bar width.
+    to_tool_x = -math.sin(theta_i)
+    to_tool_y = -math.cos(theta_i)
+    to_tool_norm = math.hypot(to_tool_x, to_tool_y) or 1.0
+    to_tool = (to_tool_x / to_tool_norm, to_tool_y / to_tool_norm)
 
-    cur_impl = articulation_point.translate(Limpl * axis[0], Limpl * axis[1])
+    cur_impl = articulation_point.translate(Limpl * to_tool[0], Limpl * to_tool[1])
+
+    # Perpendicular vector describing the implement width bar. Rotating the
+    # articulation-to-tool vector by +90° yields a consistent "T" layout.
+    axis = (-to_tool[1], to_tool[0])
 
     # Previous articulation point (best effort when orientation data missing)
     fwd_prev = last_fwd if last_fwd is not None else fwd
@@ -192,15 +196,15 @@ def compute_articulated_centers(
     Jly = last_xy.y - long_offset * fwd_prev[1] + offset_lateral * right_prev[1]
     axis_prev = impl_theta_rad
     if axis_prev is None:
-        last_axis = axis
+        last_to_tool = to_tool
     else:
-        last_axis = (
+        last_to_tool = (
             -math.sin(axis_prev),
             -math.cos(axis_prev),
         )
-        norm = math.hypot(*last_axis) or 1.0
-        last_axis = (last_axis[0] / norm, last_axis[1] / norm)
-    last_impl = Coordinate(Jlx + Limpl * last_axis[0], Jly + Limpl * last_axis[1])
+        norm = math.hypot(*last_to_tool) or 1.0
+        last_to_tool = (last_to_tool[0] / norm, last_to_tool[1] / norm)
+    last_impl = Coordinate(Jlx + Limpl * last_to_tool[0], Jly + Limpl * last_to_tool[1])
 
     significant_motion = cur_impl.distance_to(last_impl) >= EPS_IMPL
 
