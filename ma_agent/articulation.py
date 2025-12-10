@@ -105,7 +105,7 @@ def compute_articulated_centers(
         unavailable the current orientation is used as a reasonable
         approximation.
     """
-    print(
+    """print(
         "\n[compute_articulated_centers] CHAMADA",
         f"\n last_xy = {last_xy}",
         f"\n cur_xy = {cur_xy}",
@@ -122,7 +122,7 @@ def compute_articulated_centers(
         f"\n last_fwd = {last_fwd}",
         f"\n last_right = {last_right}",
         "\n---------------------------------------------"
-    )
+    )"""
 
     long_offset = distancia_antena + offset_longitudinal
 
@@ -198,6 +198,32 @@ def compute_articulated_centers(
     last_impl = Coordinate(Jlx + Limpl * last_axis[0], Jly + Limpl * last_axis[1])
 
     significant_motion = cur_impl.distance_to(last_impl) >= EPS_IMPL
+
+    print(
+        "\n[ARTICULATION DEBUG]",
+        f"\n  Tractor:",
+        f"\n    last_xy = {last_xy}",
+        f"\n    cur_xy = {cur_xy}",
+        f"\n    displacement = {displacement}",
+        f"\n    dist = {dist:.4f} m",
+        f"\n    tractor_heading (rad) = {th_trac:.4f}",
+        f"\n",
+        f"\n  Curvature:",
+        f"\n    previous_displacement = {previous_displacement}",
+        f"\n    kappa = {kappa:.6f} rad/m",
+        f"\n",
+        f"\n  Implement:",
+        f"\n    impl_theta (rad) = {theta_i:.4f}",
+        f"\n    impl_theta (deg) = {math.degrees(theta_i):.2f}°",
+        f"\n    axis = {axis}",
+        f"\n    articulation_point = {articulation_point}",
+        f"\n    last_center = {last_impl}",
+        f"\n    current_center = {cur_impl}",
+        f"\n    movement = {cur_impl.distance_to(last_impl):.4f} m",
+        f"\n    significant_motion = {significant_motion}",
+        "\n---------------------------------------------"
+    )
+
 
     return ArticulationState(
         last_center=last_impl,
