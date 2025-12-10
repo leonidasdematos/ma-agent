@@ -48,8 +48,6 @@ class ArticulationState:
 
     last_center: Coordinate
     current_center: Coordinate
-    bar_left: Coordinate
-    bar_right: Coordinate
     articulation_point: Coordinate
     axis: Tuple[float, float]
     theta: float
@@ -191,12 +189,6 @@ def compute_articulated_centers(
     # articulation-to-tool vector by +90° yields a consistent "T" layout.
     axis = (-to_tool[1], to_tool[0])
 
-    # Bar endpoints centred on the implement centre so the width stays at the
-    # trailing end instead of around the hitch.
-    half_width = 0.5 * work_width_m
-    bar_left = cur_impl.translate(axis[0] * half_width, axis[1] * half_width)
-    bar_right = cur_impl.translate(-axis[0] * half_width, -axis[1] * half_width)
-
     # Previous articulation point (best effort when orientation data missing)
     fwd_prev = last_fwd if last_fwd is not None else fwd
     right_prev = last_right if last_right is not None else right
@@ -236,8 +228,6 @@ def compute_articulated_centers(
         f"\n    articulation_point = {articulation_point}",
         f"\n    last_center = {last_impl}",
         f"\n    current_center = {cur_impl}",
-        f"\n    bar_left = {bar_left}",
-        f"\n    bar_right = {bar_right}",
         f"\n    movement = {cur_impl.distance_to(last_impl):.4f} m",
         f"\n    significant_motion = {significant_motion}",
         "\n---------------------------------------------"
@@ -247,8 +237,6 @@ def compute_articulated_centers(
     return ArticulationState(
         last_center=last_impl,
         current_center=cur_impl,
-        bar_left=bar_left,
-        bar_right=bar_right,
         articulation_point=articulation_point,
         axis=axis,
         theta=theta_i,
