@@ -169,8 +169,13 @@ def compute_articulated_centers(
         theta_i = _wrap_angle(impl_theta_rad + alpha * kappa * dist)
 
     # 3) Implement axis and centres
-    axis_x = math.sin(theta_i)
-    axis_y = math.cos(theta_i)
+    # The implement trails the tractor, so its centre lies behind the
+    # articulation point relative to the heading. The monitor expects the axis
+    # to point from the articulation towards the tool (i.e., backwards). Use
+    # the negative heading vectors to ensure the implement is positioned
+    # behind the hitch instead of in front of the tractor.
+    axis_x = -math.sin(theta_i)
+    axis_y = -math.cos(theta_i)
     axis_norm = math.hypot(axis_x, axis_y) or 1.0
     axis = (axis_x / axis_norm, axis_y / axis_norm)
 
@@ -190,8 +195,8 @@ def compute_articulated_centers(
         last_axis = axis
     else:
         last_axis = (
-            math.sin(axis_prev),
-            math.cos(axis_prev),
+            -math.sin(axis_prev),
+            -math.cos(axis_prev),
         )
         norm = math.hypot(*last_axis) or 1.0
         last_axis = (last_axis[0] / norm, last_axis[1] / norm)
