@@ -158,7 +158,7 @@ class PlanterSimulator(TelemetryPublisher):
 
     def _cycle_samples(self) -> List[_Sample]:
         if self._external_route:
-            return self._build_samples_from_points(self._external_route, densify=False)
+            return self._build_samples_from_points(self._external_route)
         points = self._serpentine_points()
         return self._build_samples_from_points(points)
 
@@ -210,8 +210,8 @@ class PlanterSimulator(TelemetryPublisher):
 
         return points
 
-    def _build_samples_from_points(self, points: List[_Point], *, densify: bool = True) -> List[_Sample]:
-        densified_points = self._densify_points(points) if densify else points
+    def _build_samples_from_points(self, points: List[_Point]) -> List[_Sample]:
+        densified_points = self._densify_points(points)
         samples: List[_Sample] = []
         if not densified_points:
             return samples
@@ -238,8 +238,6 @@ class PlanterSimulator(TelemetryPublisher):
                 speed = target_speed
                 last_heading = heading
                 time_delta = distance / speed if speed > 0.0 else 1.0 / self.sample_rate_hz
-                if not densify:
-                    time_delta = min(time_delta, 1.0 / self.sample_rate_hz)
             else:
                 heading = last_heading
                 speed = 0.0
