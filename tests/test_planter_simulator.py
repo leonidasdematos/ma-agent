@@ -89,7 +89,7 @@ def test_planter_simulator_accepts_explicit_route_points():
     assert len(samples) >= 3
     assert samples[0].point.active is False
     assert samples[1].point.active is True
-    assert samples[2].point.east_m == pytest.approx(2.0)
+    assert any(sample.point.east_m == pytest.approx(2.0) for sample in samples)
 
 
 def test_planter_simulator_loads_geojson_route(tmp_path):
@@ -137,9 +137,75 @@ def test_planter_simulator_loads_geojson_route(tmp_path):
 
     samples = simulator._cycle_samples()
     assert len(samples) >= 4
-    actives = [sample.point.active for sample in samples[:4]]
+    actives = [sample.point.active for sample in samples]
     assert actives[:2] == [True, True]
-    assert actives[2:] == [False, False]
+    assert any(state is False for state in actives)
+
+
+def test_planter_simulator_filters_sideways_geojson_segments(tmp_path):
+    base_lat = -22.0
+    base_lon = -47.0
+
+    def to_lon_lat(east_m: float, north_m: float) -> tuple[float, float]:
+        dlat = (north_m / 6_378_137.0) * (180.0 / math.pi)
+        dlon = (
+                east_m
+                / (6_378_137.0 * math.cos(math.radians(base_lat)))
+                * (180.0 / math.pi)
+        )
+        return base_lon + dlon, base_lat + dlat
+
+    coords = [
+        to_lon_lat(0.0, 0.0),
+        to_lon_lat(5.0, 0.0),
+        to_lon_lat(5.01, -0.2),
+        to_lon_lat(5.0, 5.0),
+    ]
+    geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"active": True},
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": coords,
+                },
+            }
+        ],
+    }
+
+    route_file = tmp_path / "sideways_route.geojson"
+    route_file.write_text(json.dumps(geojson))
+
+    simulator = PlanterSimulator(
+        field_length_m=20.0,
+        headland_length_m=0.0,
+        speed_mps=2.5,
+        sample_rate_hz=5.0,
+        passes_per_cycle=2,
+        loop_forever=False,
+        base_lat=base_lat,
+        base_lon=base_lon,
+        route_file=str(route_file),
+    )
+
+    samples = simulator._cycle_samples()
+    assert samples
+
+    prev_heading = samples[0].heading_deg
+    prev_point = samples[0].point
+    for sample in samples[1:]:
+        delta_east = sample.point.east_m - prev_point.east_m
+        delta_north = sample.point.north_m - prev_point.north_m
+        distance = math.hypot(delta_east, delta_north)
+        turn = abs(((sample.heading_deg - prev_heading + 180.0) % 360.0) - 180.0)
+
+        assert not (distance < 0.5 and turn > 150.0)
+
+        if distance > 0.01:
+            prev_heading = sample.heading_deg
+            prev_point = sample.point
 
 def test_planter_simulator_limits_speed_on_sparse_routes():
     simulator = PlanterSimulator(

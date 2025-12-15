@@ -78,6 +78,7 @@ class PlanterSimulator(TelemetryPublisher):
         self.accuracy_m = accuracy_m
         self.passes_per_cycle = passes_per_cycle
         self.loop_forever = loop_forever
+        self._external_route_format: Optional[str] = None
         route_info = self._load_external_route(
             route_points=route_points, route_file=route_file, route_format=route_format
         )
@@ -85,7 +86,9 @@ class PlanterSimulator(TelemetryPublisher):
         if route_info is None:
             self._external_route, self._route_source = None, None
         else:
-            self._external_route, self._route_source = route_info
+            self._external_route, self._route_source, self._external_route_format = (
+                route_info
+            )
 
         width_m = (implement_profile.row_count * implement_profile.row_spacing_m) if implement_profile else 13.0
         self.implement_width_m = width_m
@@ -211,7 +214,14 @@ class PlanterSimulator(TelemetryPublisher):
         return points
 
     def _build_samples_from_points(self, points: List[_Point]) -> List[_Sample]:
-        densified_points = self._densify_points(points)
+        filtered_points = (
+            self._prevent_sideways_segments(points)
+            if self._external_route_format == "geojson"
+            else points
+        )
+        densified_points = self._densify_points(filtered_points)
+        if self._external_route_format == "geojson":
+            densified_points = self._prevent_sideways_segments(densified_points)
         samples: List[_Sample] = []
         if not densified_points:
             return samples
@@ -267,6 +277,52 @@ class PlanterSimulator(TelemetryPublisher):
                 last_point = candidate
 
         return densified
+
+    def _prevent_sideways_segments(self, points: List[_Point]) -> List[_Point]:
+        """Drop tiny segments that would force unrealistic sideways motion.
+
+        GeoJSON routes can contain dense or noisy vertices. When those points are
+        interpolated the simulator may briefly rotate the tractor sideways before
+        continuing along the intended path. To avoid that we skip short segments
+        that demand a large heading change.
+        """
+
+        if len(points) < 2:
+            return points
+
+        filtered: List[_Point] = [points[0]]
+        last_point = points[0]
+        last_heading: Optional[float] = None
+        for point in points[1:]:
+            delta_east = point.east_m - last_point.east_m
+            delta_north = point.north_m - last_point.north_m
+            distance = math.hypot(delta_east, delta_north)
+            if distance < 1e-3:
+                continue
+
+            heading = (math.degrees(math.atan2(delta_east, delta_north)) + 360.0) % 360.0
+            if point.active != last_point.active:
+                filtered.append(point)
+                last_point = point
+                last_heading = heading
+                continue
+
+            if last_heading is not None:
+                turn = abs(((heading - last_heading + 180.0) % 360.0) - 180.0)
+                if turn > 100.0 and distance < 0.5:
+                    continue
+                soft_distance_limit = max(2.0, min(6.0, self.implement_width_m * 0.5))
+                if turn > 170.0 and distance < soft_distance_limit:
+                    continue
+
+            filtered.append(point)
+            last_point = point
+            last_heading = heading
+
+        if filtered[-1] is not points[-1]:
+            filtered.append(points[-1])
+
+        return filtered
 
 
     def _speed_variation(self, *, index: int, is_active: bool) -> float:
@@ -363,32 +419,34 @@ class PlanterSimulator(TelemetryPublisher):
         route_points: Optional[Iterable[object]],
         route_file: Optional[str],
         route_format: Optional[str],
-    ) -> Optional[Tuple[List[_Point], Optional[str]]]:
+    ) -> Optional[Tuple[List[_Point], Optional[str], Optional[str]]]:
         points: Optional[List[_Point]] = None
         source: Optional[str] = None
+        route_fmt: Optional[str] = None
         if route_points is not None:
             points = [self._normalize_route_point(entry) for entry in route_points]
             source = "inline route_points"
+            route_fmt = route_format or "json"
         elif route_file:
             path = self._resolve_route_path(route_file)
-            points = self._load_route_file(path, route_format)
+            points, route_fmt = self._load_route_file(path, route_format)
             source = str(path)
 
         if points is not None:
             if not points:
                 raise ValueError("External route sources must contain at least one point")
-            return points, source
+            return points, source, route_fmt
         return None
 
-    def _load_route_file(self, path: Path, route_format: Optional[str]) -> List[_Point]:
+    def _load_route_file(self, path: Path, route_format: Optional[str]) -> Tuple[List[_Point], str]:
 
         data = json.loads(path.read_text())
         fmt = (route_format or self._infer_route_format(path, data)).lower()
         if fmt not in {"json", "geojson"}:
             raise ValueError(f"Unsupported route format: {fmt}")
         if fmt == "geojson":
-            return self._parse_route_geojson(data)
-        return self._parse_route_json(data)
+            return self._parse_route_geojson(data), fmt
+        return self._parse_route_json(data), fmt
 
     @staticmethod
     def _resolve_route_path(route_file: str) -> Path:
