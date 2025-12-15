@@ -169,7 +169,12 @@ def compute_articulated_centers(
         alpha = _clamp(Lhitch / (Lhitch + Limpl), 0.3, 0.9)
         theta_i = _wrap_angle(impl_theta_rad + alpha * kappa * dist)
         heading_error = _wrap_angle(th_trac - theta_i)
-        relax_rate = _clamp(dist / max(Limpl, 0.1), 0.0, 1.0)
+        # Dampen the alignment term while the tractor is cornering so the
+        # implement does not instantly snap to the new heading. Sharp turns
+        # (high curvature) produce a smaller relaxation factor, while straight
+        # segments still converge normally.
+        turn_damping = 1.0 / (1.0 + abs(kappa) * max(Lhitch, 0.1))
+        relax_rate = _clamp(dist / max(Limpl, 0.1), 0.0, 1.0) * turn_damping
         theta_i = _wrap_angle(theta_i + (1.0 - alpha) * heading_error * relax_rate)
 
     # 3) Implement axis and centres
